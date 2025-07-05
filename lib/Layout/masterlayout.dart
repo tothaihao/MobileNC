@@ -62,9 +62,9 @@ class MasterLayout extends StatelessWidget {
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: Colors.brown[300],
+        backgroundColor: Color.fromRGBO(156, 107, 83, 1),
         selectedItemColor: Colors.white,
-        unselectedItemColor: Colors.white60,
+         unselectedItemColor: const Color.fromARGB(153, 248, 245, 245),
         currentIndex: currentIndex,
         onTap: (index) => _onTabTapped(context, index),
         type: BottomNavigationBarType.fixed,
