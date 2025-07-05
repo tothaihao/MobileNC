@@ -1,4 +1,10 @@
 
+import 'Screen/cart_screen.dart';
+import 'Screen/checkout_screen.dart';
+import 'Screen/contact_screen.dart';
+import 'Screen/login_screen.dart';
+import 'Screen/register_screen.dart';
+import 'Screen/success_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -32,7 +38,7 @@ class MainApp extends StatelessWidget {
       initialRoute: '/', // Bạn có thể đổi thành '/admin' nếu muốn vào admin trước
       routes: {
         // USER ROUTES
-        '/': (context) =>  HomeScreen(),
+        '/home': (context) =>  HomeScreen(),
         '/products': (context) =>  ProductListScreen(),
         '/profile': (context) =>  UserProfilePage(),
         '/history': (context) =>  PurchaseHistoryPage(),
@@ -40,7 +46,12 @@ class MainApp extends StatelessWidget {
         '/product-detail': (context) => ProductDetailPage(
               productId: ModalRoute.of(context)?.settings.arguments as String?,
             ),
-
+        '/': (context) => const LoginScreen(),
+        '/register': (context) => const RegisterScreen(),
+        '/cart': (context) => const CartScreen(),
+        '/checkout': (context) => const CheckoutScreen(),
+        '/success': (context) => const SuccessScreen(),
+        '/contact': (context) => const ContactScreen(),
         // ADMIN ROUTE
         '/admin': (context) => const DashboardPage(),
       },

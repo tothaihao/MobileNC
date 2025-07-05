@@ -5,6 +5,7 @@ class MasterLayout extends StatelessWidget {
   final int currentIndex;
 
   const MasterLayout({
+    super.key,
     required this.child,
     this.currentIndex = 0,
   });
@@ -14,7 +15,7 @@ class MasterLayout extends StatelessWidget {
 
     switch (index) {
       case 0:
-        Navigator.pushReplacementNamed(context, '/');
+        Navigator.pushReplacementNamed(context, '/home');
         break;
       case 1:
         Navigator.pushReplacementNamed(context, '/products');
@@ -23,7 +24,7 @@ class MasterLayout extends StatelessWidget {
         Navigator.pushReplacementNamed(context, '/history');
         break;
       case 3:
-        Navigator.pushReplacementNamed(context, '/about');
+        Navigator.pushReplacementNamed(context, '/contact');
         break;
       case 4:
         Navigator.pushReplacementNamed(context, '/Profile');
@@ -52,7 +53,12 @@ class MasterLayout extends StatelessWidget {
                       color: Colors.brown[700],
                     ),
                   ),
-                  Icon(Icons.shopping_cart, color: Colors.brown[700]),
+                  IconButton(
+                    icon: Icon(Icons.shopping_cart, color: Colors.brown[700]),
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/cart');
+                    },
+                  ),
                 ],
               ),
             ),
@@ -62,9 +68,9 @@ class MasterLayout extends StatelessWidget {
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: Color.fromRGBO(156, 107, 83, 1),
+        backgroundColor: const Color.fromRGBO(156, 107, 83, 1),
         selectedItemColor: Colors.white,
-         unselectedItemColor: const Color.fromARGB(153, 248, 245, 245),
+        unselectedItemColor: const Color.fromARGB(153, 248, 245, 245),
         currentIndex: currentIndex,
         onTap: (index) => _onTabTapped(context, index),
         type: BottomNavigationBarType.fixed,
