@@ -1,7 +1,6 @@
 import 'package:do_an_mobile_nc/Layout/masterlayout.dart';
 import 'package:flutter/material.dart';
 import 'purchase_history_page.dart';
-import 'package:do_an_mobile_nc/admin/report_page.dart';
 
 
 class UserProfilePage extends StatelessWidget {
@@ -166,18 +165,6 @@ class HomePage extends StatelessWidget {
                 );
               },
               child: const Text('Xem lịch sử mua hàng'),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Center(
-            child: ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const ReportPage()),
-                );
-              },
-              child: const Text('Xem báo cáo thống kê'),
             ),
           ),
         ],
