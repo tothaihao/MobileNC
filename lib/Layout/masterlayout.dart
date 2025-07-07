@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:do_an_mobile_nc/theme/colors.dart'; // Import file color.dart
 
 class MasterLayout extends StatelessWidget {
   final Widget child;
@@ -35,7 +36,7 @@ class MasterLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.brown[50],
+      backgroundColor: AppColors.scaffold, // Thay Colors.brown[50]
       body: SafeArea(
         child: Column(
           children: [
@@ -50,11 +51,11 @@ class MasterLayout extends StatelessWidget {
                     style: TextStyle(
                       fontFamily: 'Pacifico', // Custom font nếu có
                       fontSize: 24,
-                      color: Colors.brown[700],
+                      color: AppColors.primary, // Thay Colors.brown[700]
                     ),
                   ),
                   IconButton(
-                    icon: Icon(Icons.shopping_cart, color: Colors.brown[700]),
+                    icon: Icon(Icons.shopping_cart, color: AppColors.primary), // Thay Colors.brown[700]
                     onPressed: () {
                       Navigator.pushNamed(context, '/cart');
                     },
@@ -68,9 +69,9 @@ class MasterLayout extends StatelessWidget {
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: const Color.fromRGBO(156, 107, 83, 1),
-        selectedItemColor: Colors.white,
-        unselectedItemColor: const Color.fromARGB(153, 248, 245, 245),
+        backgroundColor: AppColors.primary, // Thay Color.fromRGBO(156, 107, 83, 1)
+        selectedItemColor: AppColors.white,
+        unselectedItemColor: AppColors.iconColor.withOpacity(0.6), // Thay Color.fromARGB(153, 248, 245, 245)
         currentIndex: currentIndex,
         onTap: (index) => _onTabTapped(context, index),
         type: BottomNavigationBarType.fixed,
