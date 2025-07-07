@@ -37,7 +37,11 @@ class _ProductListScreenState extends State<ProductListScreen> {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         setState(() {
-          products = (data['data'] as List).map((json) => Product.fromJson(json)).toList();
+          // Lọc bỏ sản phẩm có category là "bestSeller"
+          products = (data['data'] as List)
+              .where((json) => (json['category'] as String?)?.toLowerCase() != 'bestseller')
+              .map((json) => Product.fromJson(json))
+              .toList();
           isLoading = false;
         });
       } else {
