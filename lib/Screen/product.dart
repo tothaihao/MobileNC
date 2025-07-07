@@ -5,7 +5,6 @@ import 'package:do_an_mobile_nc/Layout/masterlayout.dart';
 import 'package:do_an_mobile_nc/Screen/product_detail.dart';
 import 'package:do_an_mobile_nc/Screen/search_screen.dart';
 import 'package:do_an_mobile_nc/models/product_model.dart';
-import 'dart:developer' as developer;
 
 class ProductListScreen extends StatefulWidget {
   @override
@@ -34,8 +33,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
   Future<void> fetchProducts() async {
     try {
       final query = selectedCategory == 'Tất cả' ? '' : selectedCategory;
-      final response = await http.get(Uri.parse('http://192.168.1.170:5000/api/shop/products/get?category=$query')); // Thay IP của bạn
-      developer.log('API Response: ${response.body}', name: 'ProductListScreen');
+      final response = await http.get(Uri.parse('http://10.21.5.195:5000/api/shop/products/get?category=$query')); // Thay IP của bạn
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         setState(() {
@@ -49,7 +47,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
       setState(() {
         isLoading = false;
       });
-      developer.log('Error fetching products: $e', name: 'ProductListScreen');
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
@@ -161,7 +158,7 @@ class ProductCard extends StatelessWidget {
           children: [
             Image.network(
               product.image,
-              height: 100,
+              height: 130,
               width: double.infinity,
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) => Icon(Icons.error),
@@ -190,7 +187,28 @@ class ProductCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                Icon(Icons.favorite_border, color: Colors.grey),
+                Row(
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.favorite_border, color: Colors.grey),
+                      onPressed: () {
+                        // Placeholder action: Hiển thị thông báo
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Đã thêm ${product.title} vào yêu thích!')),
+                        );
+                      },
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.add_shopping_cart, color: Colors.brown),
+                      onPressed: () {
+                        // Placeholder action: Hiển thị thông báo
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Đã thêm ${product.title} vào giỏ hàng!')),
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ],
             ),
           ],
