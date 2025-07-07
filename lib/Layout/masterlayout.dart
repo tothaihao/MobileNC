@@ -27,7 +27,7 @@ class MasterLayout extends StatelessWidget {
         Navigator.pushReplacementNamed(context, '/contact');
         break;
       case 4:
-        Navigator.pushReplacementNamed(context, '/Profile');
+        Navigator.pushReplacementNamed(context, '/profile');
         break;
     }
   }

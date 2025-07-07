@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.example.do_an_mobile_nc"
-    compileSdk = 34
+    compileSdk = 35
     ndkVersion = "29.0.13599879"
 
     compileOptions {
