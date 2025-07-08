@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:do_an_mobile_nc/models/product_model.dart';
 import 'package:do_an_mobile_nc/Screen/product_detail.dart';
+import 'package:do_an_mobile_nc/config.dart';
 import 'dart:async';
 import 'dart:developer' as developer;
 
@@ -22,7 +23,7 @@ class _SearchScreenState extends State<SearchScreen> {
       isLoading = true;
     });
     try {
-      final response = await http.get(Uri.parse('http://192.168.1.170:5000/api/shop/products/get?title=$query')); // Thay IP của bạn
+      final response = await http.get(Uri.parse('${Config.baseUrl}/api/shop/products/get?title=$query')); // Thay IP của bạn
       developer.log('API Response: ${response.body}', name: 'SearchScreen');
       if (response.statusCode == 200) {
         final data = json.decode(response.body);

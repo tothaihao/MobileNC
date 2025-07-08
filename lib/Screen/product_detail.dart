@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:do_an_mobile_nc/models/product_model.dart';
 import 'package:do_an_mobile_nc/theme/colors.dart'; // Import file color.dart
+import 'package:do_an_mobile_nc/config.dart';
 
 class ProductDetailPage extends StatefulWidget {
   final String? productId;
@@ -30,7 +31,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
   Future<void> fetchProductDetails() async {
     try {
-      final response = await http.get(Uri.parse('http://10.21.5.195:5000/api/shop/products/get/${widget.productId}'));
+      final response = await http.get(Uri.parse('${Config.baseUrl}/api/shop/products/get/${widget.productId}'));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         setState(() {

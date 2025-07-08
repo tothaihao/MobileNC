@@ -5,6 +5,7 @@ import 'package:do_an_mobile_nc/Layout/masterlayout.dart';
 import 'package:do_an_mobile_nc/Screen/product_detail.dart';
 import 'package:do_an_mobile_nc/Screen/search_screen.dart';
 import 'package:do_an_mobile_nc/models/product_model.dart';
+import 'package:do_an_mobile_nc/config.dart'; // Import config.dart
 
 class ProductListScreen extends StatefulWidget {
   @override
@@ -33,7 +34,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
   Future<void> fetchProducts() async {
     try {
       final query = selectedCategory == 'Tất cả' ? '' : selectedCategory;
-      final response = await http.get(Uri.parse('http://10.21.5.195:5000/api/shop/products/get?category=$query')); // Thay IP của bạn
+      final response = await http.get(Uri.parse('${Config.baseUrl}/api/shop/products/get?category=$query')); // Sử dụng Config.baseUrl
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         setState(() {
