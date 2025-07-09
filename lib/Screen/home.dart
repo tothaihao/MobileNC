@@ -88,6 +88,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildSectionTitle(BuildContext context, String title) {
+    String filter = title == 'Sản phẩm bán chạy' ? 'bestSeller' : 'sale'; // Đặt filter dựa trên title
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
       child: Row(
@@ -103,7 +104,11 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           GestureDetector(
             onTap: () {
-              Navigator.pushReplacementNamed(context, '/products');
+              Navigator.pushReplacementNamed(
+                context,
+                '/products',
+                arguments: {'filter': filter}, // Truyền filter làm tham số
+              );
             },
             child: Text(
               'Tất cả',
@@ -123,10 +128,10 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         cs.CarouselSlider(
           options: cs.CarouselOptions(
-            height: 300.0, // Giữ chiều cao khung
+            height: 290.0, // Giữ chiều cao khung
             enlargeCenterPage: false, // Xóa hiệu ứng phóng to
             enableInfiniteScroll: false,
-            viewportFraction: 0.6, // Tăng để hiển thị nhiều card hơn
+            viewportFraction: 0.5, // Tăng để hiển thị nhiều card hơn
           ),
           items: products.map((product) {
             return Builder(
@@ -190,22 +195,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 '${price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')} đ',
                 style: TextStyle(color: Colors.green, fontSize: 14),
               ),
-              SizedBox(height: 4),
+              SizedBox(height: 8),
               Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   Icon(Icons.star, color: Colors.yellow, size: 20),
                   SizedBox(width: 4),
                   Text(
                     product.averageReview.toStringAsFixed(1),
-                    style: TextStyle(fontSize: 16), // Giảm kích thước chữ
+                    style: TextStyle(fontSize: 16),
                   ),
-                ],
-              ),
-              SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
+                  Spacer(),
                   IconButton(
                     icon: Icon(Icons.favorite_border, color: Colors.grey),
                     onPressed: () {

@@ -6,6 +6,7 @@ import 'package:do_an_mobile_nc/Screen/product_detail.dart';
 import 'package:do_an_mobile_nc/config.dart';
 import 'dart:async';
 import 'dart:developer' as developer;
+import 'package:diacritic/diacritic.dart' as diacritic; // Thêm package diacritic
 
 class SearchScreen extends StatefulWidget {
   @override
@@ -18,19 +19,44 @@ class _SearchScreenState extends State<SearchScreen> {
   bool isLoading = false;
   Timer? _debounce;
 
+  // Chuẩn hóa chuỗi, loại bỏ dấu
+  String _normalize(String input) {
+    return diacritic.removeDiacritics(input.toLowerCase());
+  }
+
   Future<void> fetchProducts(String query) async {
     setState(() {
       isLoading = true;
     });
     try {
-      final response = await http.get(Uri.parse('${Config.baseUrl}/api/shop/products/get?title=$query')); // Thay IP của bạn
+      final normalizedQuery = _normalize(query); // Chuẩn hóa query
+      final encodedQuery = Uri.encodeComponent(query); // Mã hóa query để tránh lỗi ký tự đặc biệt
+      final response = await http.get(Uri.parse('${Config.baseUrl}/api/shop/products/get?title=$encodedQuery'));
+      developer.log('API Request: ${Config.baseUrl}/api/shop/products/get?title=$encodedQuery', name: 'SearchScreen');
       developer.log('API Response: ${response.body}', name: 'SearchScreen');
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        setState(() {
-          products = (data['data'] as List).map((json) => Product.fromJson(json)).toList();
-          isLoading = false;
-        });
+        if (data['data'] != null) {
+          setState(() {
+            products = (data['data'] as List)
+                .map((json) => Product.fromJson(json))
+                .where((product) {
+                  final category = product.category?.toLowerCase() ?? '';
+                  final normalizedTitle = _normalize(product.title ?? '');
+                  final titleMatch = normalizedTitle.contains(normalizedQuery);
+                  developer.log('Product: ${product.title}, Normalized Title: $normalizedTitle, Category: $category, Title Match: $titleMatch', name: 'SearchScreen');
+                  return category != 'bestseller' && titleMatch;
+                })
+                .toList();
+            isLoading = false;
+          });
+        } else {
+          setState(() {
+            products = [];
+            isLoading = false;
+          });
+          developer.log('No data in API response', name: 'SearchScreen');
+        }
       } else {
         throw Exception('Failed to load products, status: ${response.statusCode}');
       }
@@ -50,7 +76,8 @@ class _SearchScreenState extends State<SearchScreen> {
     _searchController.addListener(() {
       if (_debounce?.isActive ?? false) _debounce?.cancel();
       _debounce = Timer(const Duration(milliseconds: 500), () {
-        fetchProducts(_searchController.text);
+        final query = _searchController.text; // Sử dụng text trực tiếp từ Unikey
+        fetchProducts(query);
       });
     });
   }
@@ -73,6 +100,15 @@ class _SearchScreenState extends State<SearchScreen> {
         title: Text('Coffee shop', style: TextStyle(color: Colors.black)),
         backgroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.shopping_cart, color: Colors.brown),
+            onPressed: () {
+              // Điều hướng đến màn hình giỏ hàng
+              Navigator.pushNamed(context, '/cart'); // Thay '/cart' bằng route của CartScreen
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -90,6 +126,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 filled: true,
                 fillColor: Colors.grey[200],
               ),
+              // Lưu ý: Bật Unikey trong bàn phím hệ thống để nhập tiếng Việt có dấu
             ),
           ),
           Expanded(
@@ -144,7 +181,7 @@ class ProductCard extends StatelessWidget {
           children: [
             Image.network(
               product.image,
-              height: 100,
+              height: 120,
               width: double.infinity,
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) => Icon(Icons.error),
@@ -173,7 +210,26 @@ class ProductCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                Icon(Icons.favorite_border, color: Colors.grey),
+                Row(
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.favorite_border, color: Colors.grey),
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Đã thêm ${product.title} vào yêu thích!')),
+                        );
+                      },
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.add_shopping_cart, color: Colors.brown),
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Đã thêm ${product.title} vào giỏ hàng!')),
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ],
             ),
           ],

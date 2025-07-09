@@ -163,7 +163,7 @@ class ProductCard extends StatelessWidget {
           children: [
             Image.network(
               product.image,
-              height: 130,
+              height: 110,
               width: double.infinity,
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) => Icon(Icons.error),
@@ -175,10 +175,30 @@ class ProductCard extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            Text(
-              '${product.price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')} đ',
-              style: TextStyle(color: Colors.green),
-            ),
+            if (product.salePrice != null && product.salePrice! > 0)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${product.salePrice!.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')} đ',
+                    style: TextStyle(color: Colors.green, fontSize: 14),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    '${product.price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')} đ',
+                    style: TextStyle(
+                      color: Colors.grey,
+                      decoration: TextDecoration.lineThrough,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              )
+            else
+              Text(
+                '${product.price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')} đ',
+                style: TextStyle(color: Colors.green, fontSize: 14),
+              ),
             Spacer(),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
