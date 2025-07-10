@@ -145,10 +145,10 @@ class _SearchScreenState extends State<SearchScreen> {
                     ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.only(bottom: 16.0),
-            child: Text('<1, 2, 3>', style: TextStyle(color: Colors.grey)),
-          ),
+         // Padding(
+           // padding: const EdgeInsets.only(bottom: 16.0),
+            //child: Text('<1, 2, 3>', style: TextStyle(color: Colors.grey)),
+         // ),
         ],
       ),
     );

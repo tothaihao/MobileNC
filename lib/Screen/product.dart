@@ -17,12 +17,23 @@ class _ProductListScreenState extends State<ProductListScreen> {
   List<Product> products = [];
   bool isLoading = true;
 
+  // Bản ánh xạ giữa tên hiển thị và giá trị category thực tế
+  final Map<String, String> categoryMap = {
+    'Tất cả': '',
+    'Cà phê': 'caPhe',
+    'Trà sữa': 'traSua',
+    'Bánh ngọt': 'banhNgot',
+    'Đá xay': 'daXay',
+    'Sản phẩm bán chạy': 'bestSeller',
+  };
+
   final List<String> categories = [
     'Tất cả',
-    'caPhe',
-    'traSua',
-    'banhNgot',
-    'daXay',
+    'Cà phê',
+    'Trà sữa',
+    'Bánh ngọt',
+    'Đá xay',
+    'Sản phẩm bán chạy',
   ];
 
   @override
@@ -33,15 +44,21 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
   Future<void> fetchProducts() async {
     try {
-      final query = selectedCategory == 'Tất cả' ? '' : selectedCategory;
+      final query = categoryMap[selectedCategory] ?? ''; // Lấy giá trị category từ map
       final response = await http.get(Uri.parse('${Config.baseUrl}/api/shop/products/get?category=$query')); // Sử dụng Config.baseUrl
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         setState(() {
-          // Lọc bỏ sản phẩm có category là "bestSeller"
+          // Lọc sản phẩm dựa trên selectedCategory
           products = (data['data'] as List)
-              .where((json) => (json['category'] as String?)?.toLowerCase() != 'bestseller')
               .map((json) => Product.fromJson(json))
+              .where((product) {
+                final category = product.category?.toLowerCase() ?? '';
+                // Chỉ giữ bestSeller khi selectedCategory là 'Sản phẩm bán chạy', ngược lại loại bỏ
+                return selectedCategory == 'Sản phẩm bán chạy'
+                    ? category == 'bestseller'
+                    : category != 'bestseller';
+              })
               .toList();
           isLoading = false;
         });
@@ -123,10 +140,10 @@ class _ProductListScreenState extends State<ProductListScreen> {
                             }).toList(),
                           ),
                         ),
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Text('<1, 2, 3>', style: TextStyle(color: Colors.grey)),
-                        ),
+                        // Padding(
+                        //   padding: const EdgeInsets.only(top: 8.0),
+                        //   child: Text('<1, 2, 3>', style: TextStyle(color: Colors.grey)),
+                        // ),
                       ],
                     ),
             ),

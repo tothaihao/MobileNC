@@ -128,7 +128,7 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         cs.CarouselSlider(
           options: cs.CarouselOptions(
-            height: 290.0, // Giữ chiều cao khung
+            height: 307.0, // Giữ chiều cao khung
             enlargeCenterPage: false, // Xóa hiệu ứng phóng to
             enableInfiniteScroll: false,
             viewportFraction: 0.5, // Tăng để hiển thị nhiều card hơn
@@ -166,34 +166,60 @@ class _HomeScreenState extends State<HomeScreen> {
           padding: EdgeInsets.all(12.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween, // Đảm bảo nội dung phân bố từ đầu đến cuối
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8.0),
-                child: Image.network(
-                  product.image,
-                  height: 120,
-                  width: double.infinity, // Sửa lại để khớp với Container
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Icon(Icons.error, size: 50),
-                ),
-              ),
-              SizedBox(height: 8),
-              Text(
-                displayTitle,
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              if (variant.isNotEmpty) SizedBox(height: 4),
-              if (variant.isNotEmpty)
-                Text(
-                  variant,
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-              SizedBox(height: 4),
-              Text(
-                '${price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')} đ',
-                style: TextStyle(color: Colors.green, fontSize: 14),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8.0),
+                    child: Image.network(
+                      product.image,
+                      height: 120,
+                      width: double.infinity, // Sửa lại để khớp với Container
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Icon(Icons.error, size: 50),
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    displayTitle,
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (variant.isNotEmpty) SizedBox(height: 4),
+                  if (variant.isNotEmpty)
+                    Text(
+                      variant,
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  SizedBox(height: 4),
+                  if (useSalePrice && product.salePrice != null && product.salePrice! > 0)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${product.salePrice!.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')} đ',
+                          style: TextStyle(color: Colors.green, fontSize: 14),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          '${product.price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')} đ',
+                          style: TextStyle(
+                            color: Colors.grey,
+                            decoration: TextDecoration.lineThrough,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    )
+                  else
+                    Text(
+                      '${price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')} đ',
+                      style: TextStyle(color: Colors.green, fontSize: 14),
+                    ),
+                ],
               ),
               SizedBox(height: 8),
               Row(
