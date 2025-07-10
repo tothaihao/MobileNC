@@ -1,59 +1,46 @@
 import 'package:flutter/material.dart';
-import 'package:do_an_mobile_nc/theme/colors.dart';
+import '../theme/colors.dart';
 
 class GradientButton extends StatelessWidget {
   final String text;
-  final VoidCallback onPressed;
-  final double borderRadius;
-  final double fontSize;
-  final List<Color> colors;
-  final FontWeight fontWeight;
-  final EdgeInsetsGeometry padding;
+  final VoidCallback? onPressed;
 
   const GradientButton({
-    super.key,
+    Key? key,
     required this.text,
-    required this.onPressed,
-    this.borderRadius = 12,
-    this.fontSize = 16,
-    this.fontWeight = FontWeight.bold,
-    this.colors = const [
-      Color(0xFF9C6B53), // Nâu nhạt
-      Colors.white,      // Trắng nhạt dần
-    ],
-    this.padding = const EdgeInsets.symmetric(vertical: 16),
-  });
+    this.onPressed,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: colors,
+          colors: onPressed == null
+              ? [Colors.grey, Colors.grey.shade600]
+              : [AppColors.primary, AppColors.accent],
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
         ),
-        borderRadius: BorderRadius.circular(borderRadius),
+        borderRadius: BorderRadius.circular(12),
       ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(borderRadius),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(borderRadius),
-          onTap: onPressed,
-          child: Padding(
-            padding: padding,
-            child: Center(
-              child: Text(
-                text,
-                style: TextStyle(
-                  fontSize: fontSize,
-                  color: AppColors.white,
-                  fontWeight: fontWeight,
-                  letterSpacing: 1,
-                ),
-              ),
-            ),
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: Text(
+          text,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1,
           ),
         ),
       ),

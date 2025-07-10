@@ -71,7 +71,7 @@ class MasterLayout extends StatelessWidget {
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: AppColors.primary, // Thay Color.fromRGBO(156, 107, 83, 1)
         selectedItemColor: AppColors.white,
-        unselectedItemColor: AppColors.iconColor.withOpacity(0.6), // Thay Color.fromARGB(153, 248, 245, 245)
+        unselectedItemColor: AppColors.white.withOpacity(0.6),
         currentIndex: currentIndex,
         onTap: (index) => _onTabTapped(context, index),
         type: BottomNavigationBarType.fixed,

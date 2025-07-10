@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:do_an_mobile_nc/Layout/masterlayout.dart';
 import 'package:do_an_mobile_nc/models/product_model.dart';
-import 'package:do_an_mobile_nc/Screen/product_detail.dart';
+import 'package:do_an_mobile_nc/screens/product/product_detail_screen.dart';
 import 'package:do_an_mobile_nc/config.dart'; // Import config.dart
 
 class HomeScreen extends StatefulWidget {
@@ -158,7 +158,7 @@ class _HomeScreenState extends State<HomeScreen> {
         onTap: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => ProductDetailPage(productId: product.id)),
+            MaterialPageRoute(builder: (context) => ProductDetailScreen(productId: product.id)),
           );
         },
         child: Container(
