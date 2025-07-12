@@ -1,83 +1,30 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:provider/provider.dart';
 import 'package:do_an_mobile_nc/models/product_model.dart';
 import 'package:do_an_mobile_nc/Screen/product_detail.dart';
-import 'package:do_an_mobile_nc/config.dart';
+import 'package:do_an_mobile_nc/Layout/masterlayout.dart';
+import 'package:do_an_mobile_nc/provider/product_provider.dart';
 import 'dart:async';
-import 'dart:developer' as developer;
-import 'package:diacritic/diacritic.dart' as diacritic; // Thêm package diacritic
 
 class SearchScreen extends StatefulWidget {
+  const SearchScreen({super.key});
+
   @override
   _SearchScreenState createState() => _SearchScreenState();
 }
 
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _searchController = TextEditingController();
-  List<Product> products = [];
-  bool isLoading = false;
   Timer? _debounce;
-
-  // Chuẩn hóa chuỗi, loại bỏ dấu
-  String _normalize(String input) {
-    return diacritic.removeDiacritics(input.toLowerCase());
-  }
-
-  Future<void> fetchProducts(String query) async {
-    setState(() {
-      isLoading = true;
-    });
-    try {
-      final normalizedQuery = _normalize(query); // Chuẩn hóa query
-      final encodedQuery = Uri.encodeComponent(query); // Mã hóa query để tránh lỗi ký tự đặc biệt
-      final response = await http.get(Uri.parse('${Config.baseUrl}/api/shop/products/get?title=$encodedQuery'));
-      developer.log('API Request: ${Config.baseUrl}/api/shop/products/get?title=$encodedQuery', name: 'SearchScreen');
-      developer.log('API Response: ${response.body}', name: 'SearchScreen');
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['data'] != null) {
-          setState(() {
-            products = (data['data'] as List)
-                .map((json) => Product.fromJson(json))
-                .where((product) {
-                  final category = product.category?.toLowerCase() ?? '';
-                  final normalizedTitle = _normalize(product.title ?? '');
-                  final titleMatch = normalizedTitle.contains(normalizedQuery);
-                  developer.log('Product: ${product.title}, Normalized Title: $normalizedTitle, Category: $category, Title Match: $titleMatch', name: 'SearchScreen');
-                  return category != 'bestseller' && titleMatch;
-                })
-                .toList();
-            isLoading = false;
-          });
-        } else {
-          setState(() {
-            products = [];
-            isLoading = false;
-          });
-          developer.log('No data in API response', name: 'SearchScreen');
-        }
-      } else {
-        throw Exception('Failed to load products, status: ${response.statusCode}');
-      }
-    } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
-      developer.log('Error fetching products: $e', name: 'SearchScreen');
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-    }
-  }
 
   @override
   void initState() {
     super.initState();
-    fetchProducts('');
     _searchController.addListener(() {
       if (_debounce?.isActive ?? false) _debounce?.cancel();
       _debounce = Timer(const Duration(milliseconds: 500), () {
-        final query = _searchController.text; // Sử dụng text trực tiếp từ Unikey
-        fetchProducts(query);
+        final query = _searchController.text;
+        Provider.of<ProductProvider>(context, listen: false).searchProducts(query);
       });
     });
   }
@@ -91,6 +38,8 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<ProductProvider>(context);
+
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -104,8 +53,7 @@ class _SearchScreenState extends State<SearchScreen> {
           IconButton(
             icon: Icon(Icons.shopping_cart, color: Colors.brown),
             onPressed: () {
-              // Điều hướng đến màn hình giỏ hàng
-              Navigator.pushNamed(context, '/cart'); // Thay '/cart' bằng route của CartScreen
+              Navigator.pushNamed(context, '/cart');
             },
           ),
         ],
@@ -126,29 +74,24 @@ class _SearchScreenState extends State<SearchScreen> {
                 filled: true,
                 fillColor: Colors.grey[200],
               ),
-              // Lưu ý: Bật Unikey trong bàn phím hệ thống để nhập tiếng Việt có dấu
             ),
           ),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(12.0),
-              child: isLoading
+              child: provider.isLoading
                   ? Center(child: CircularProgressIndicator())
                   : GridView.count(
                       crossAxisCount: 2,
                       mainAxisSpacing: 12,
                       crossAxisSpacing: 12,
                       childAspectRatio: 0.75,
-                      children: products.map((product) {
+                      children: provider.products.map((product) {
                         return ProductCard(product: product);
                       }).toList(),
                     ),
             ),
           ),
-         // Padding(
-           // padding: const EdgeInsets.only(bottom: 16.0),
-            //child: Text('<1, 2, 3>', style: TextStyle(color: Colors.grey)),
-         // ),
         ],
       ),
     );
@@ -164,10 +107,8 @@ class ProductCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => ProductDetailPage(productId: product.id)),
-        );
+        Provider.of<ProductProvider>(context, listen: false).fetchProductDetails(product.id);
+        Navigator.pushNamed(context, '/product-detail', arguments: product.id);
       },
       child: Container(
         decoration: BoxDecoration(

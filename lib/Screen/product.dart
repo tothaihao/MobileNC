@@ -1,80 +1,46 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:do_an_mobile_nc/Layout/masterlayout.dart';
-import 'package:do_an_mobile_nc/Screen/product_detail.dart';
-import 'package:do_an_mobile_nc/Screen/search_screen.dart';
+import 'package:provider/provider.dart';
 import 'package:do_an_mobile_nc/models/product_model.dart';
-import 'package:do_an_mobile_nc/config.dart'; // Import config.dart
+import 'package:do_an_mobile_nc/Screen/product_detail.dart';
+import 'package:do_an_mobile_nc/provider/product_provider.dart';
+import 'package:do_an_mobile_nc/Screen/search_screen.dart';
+import 'package:do_an_mobile_nc/theme/colors.dart';
+import 'package:do_an_mobile_nc/Layout/masterlayout.dart';
+import 'package:flutter/foundation.dart';
 
 class ProductListScreen extends StatefulWidget {
+  const ProductListScreen({super.key});
+
   @override
   State<ProductListScreen> createState() => _ProductListScreenState();
 }
 
 class _ProductListScreenState extends State<ProductListScreen> {
-  String selectedCategory = 'Tất cả';
-  List<Product> products = [];
-  bool isLoading = true;
-
-  // Bản ánh xạ giữa tên hiển thị và giá trị category thực tế
-  final Map<String, String> categoryMap = {
-    'Tất cả': '',
-    'Cà phê': 'caPhe',
-    'Trà sữa': 'traSua',
-    'Bánh ngọt': 'banhNgot',
-    'Đá xay': 'daXay',
-    'Sản phẩm bán chạy': 'bestSeller',
-  };
-
-  final List<String> categories = [
-    'Tất cả',
-    'Cà phê',
-    'Trà sữa',
-    'Bánh ngọt',
-    'Đá xay',
-    'Sản phẩm bán chạy',
-  ];
-
   @override
   void initState() {
     super.initState();
-    fetchProducts();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final provider = Provider.of<ProductProvider>(context, listen: false);
+        provider.fetchProducts(context: context); // Lấy tất cả sản phẩm ban đầu
+      }
+    });
   }
 
-  Future<void> fetchProducts() async {
-    try {
-      final query = categoryMap[selectedCategory] ?? ''; // Lấy giá trị category từ map
-      final response = await http.get(Uri.parse('${Config.baseUrl}/api/shop/products/get?category=$query')); // Sử dụng Config.baseUrl
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        setState(() {
-          // Lọc sản phẩm dựa trên selectedCategory
-          products = (data['data'] as List)
-              .map((json) => Product.fromJson(json))
-              .where((product) {
-                final category = product.category?.toLowerCase() ?? '';
-                // Chỉ giữ bestSeller khi selectedCategory là 'Sản phẩm bán chạy', ngược lại loại bỏ
-                return selectedCategory == 'Sản phẩm bán chạy'
-                    ? category == 'bestseller'
-                    : category != 'bestseller';
-              })
-              .toList();
-          isLoading = false;
-        });
-      } else {
-        throw Exception('Failed to load products, status: ${response.statusCode}');
-      }
-    } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-    }
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Không gọi fetchProducts ở đây để tránh vòng lặp
   }
 
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<ProductProvider>(context);
+
+    if (kDebugMode) {
+      print('Building ProductListScreen with ${provider.products.length} products, isLoading: ${provider.isLoading}');
+    }
+
     return MasterLayout(
       currentIndex: 1,
       child: Column(
@@ -95,24 +61,25 @@ class _ProductListScreenState extends State<ProductListScreen> {
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => SearchScreen()),
-                        );
+                          MaterialPageRoute(builder: (context) => const SearchScreen()),
+                        ).then((_) {
+                          // Quay lại ProductListScreen, reset state nếu cần
+                          setState(() {});
+                        });
                       },
                     ),
                     DropdownButton<String>(
-                      value: selectedCategory,
-                      items: categories.map((cat) {
+                      value: provider.selectedCategory,
+                      items: provider.categoryOptions.map((cat) {
                         return DropdownMenuItem<String>(
                           value: cat,
                           child: Text(cat, style: TextStyle(color: Colors.grey)),
                         );
                       }).toList(),
                       onChanged: (value) {
-                        setState(() {
-                          selectedCategory = value!;
-                          isLoading = true;
-                          fetchProducts();
-                        });
+                        if (value != null) {
+                          provider.updateCategory(value, context: context);
+                        }
                       },
                       icon: Icon(Icons.arrow_drop_down, color: Colors.grey),
                       underline: SizedBox(),
@@ -125,7 +92,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(12.0),
-              child: isLoading
+              child: provider.isLoading
                   ? Center(child: CircularProgressIndicator())
                   : Column(
                       children: [
@@ -135,15 +102,11 @@ class _ProductListScreenState extends State<ProductListScreen> {
                             mainAxisSpacing: 12,
                             crossAxisSpacing: 12,
                             childAspectRatio: 0.75,
-                            children: products.map((product) {
+                            children: provider.products.map((product) {
                               return ProductCard(product: product);
                             }).toList(),
                           ),
                         ),
-                        // Padding(
-                        //   padding: const EdgeInsets.only(top: 8.0),
-                        //   child: Text('<1, 2, 3>', style: TextStyle(color: Colors.grey)),
-                        // ),
                       ],
                     ),
             ),
@@ -163,10 +126,8 @@ class ProductCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => ProductDetailPage(productId: product.id)),
-        );
+        Provider.of<ProductProvider>(context, listen: false).fetchProductDetails(product.id, context: context);
+        Navigator.pushNamed(context, '/product-detail', arguments: product.id);
       },
       child: Container(
         decoration: BoxDecoration(
@@ -234,7 +195,6 @@ class ProductCard extends StatelessWidget {
                     IconButton(
                       icon: Icon(Icons.favorite_border, color: Colors.grey),
                       onPressed: () {
-                        // Placeholder action: Hiển thị thông báo
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Đã thêm ${product.title} vào yêu thích!')),
                         );
@@ -243,7 +203,6 @@ class ProductCard extends StatelessWidget {
                     IconButton(
                       icon: Icon(Icons.add_shopping_cart, color: Colors.brown),
                       onPressed: () {
-                        // Placeholder action: Hiển thị thông báo
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Đã thêm ${product.title} vào giỏ hàng!')),
                         );

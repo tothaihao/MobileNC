@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart' as cs;
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:do_an_mobile_nc/Layout/masterlayout.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter/foundation.dart'; // Thêm để dùng kDebugMode
 import 'package:do_an_mobile_nc/models/product_model.dart';
 import 'package:do_an_mobile_nc/Screen/product_detail.dart';
-import 'package:do_an_mobile_nc/config.dart'; // Import config.dart
+import 'package:do_an_mobile_nc/Layout/masterlayout.dart';
+import 'package:do_an_mobile_nc/provider/product_provider.dart';
 
 class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
@@ -18,46 +20,16 @@ class _HomeScreenState extends State<HomeScreen> {
     'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT0RyiFla98L-B6yXCLbOiELZktX5jHkwQdZw&s',
     'https://enjoycoffee.vn/wp-content/uploads/2020/01/coffee.2-810x524-1.jpg',
   ];
-  
-  List<Product> bestSellerProducts = [];
-  List<Product> hotDealProducts = [];
-  bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    fetchProducts();
-  }
-
-  Future<void> fetchProducts() async {
-    try {
-      final response = await http.get(Uri.parse('${Config.baseUrl}/api/shop/products/get')); // Sử dụng Config.baseUrl
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final allProducts = (data['data'] as List).map((json) => Product.fromJson(json)).toList();
-        
-        // Lọc sản phẩm bestseller
-        bestSellerProducts = allProducts
-            .where((product) => product.category.toLowerCase() == 'bestseller')
-            .toList();
-
-        // Lọc sản phẩm ưu đãi (có salePrice)
-        hotDealProducts = allProducts
-            .where((product) => product.salePrice != null && product.salePrice! > 0)
-            .toList();
-
-        setState(() {
-          isLoading = false;
-        });
-      } else {
-        throw Exception('Failed to load products, status: ${response.statusCode}');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final provider = Provider.of<ProductProvider>(context, listen: false);
+        provider.fetchProducts(context: context);
       }
-    } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-    }
+    });
   }
 
   Widget _buildBanner() {
@@ -78,17 +50,17 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildSectionWithFilter(BuildContext context, String title) {
+  Widget _buildSectionWithFilter(BuildContext context, String category) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionTitle(context, title),
+        _buildSectionTitle(context, category, category),
       ],
     );
   }
 
-  Widget _buildSectionTitle(BuildContext context, String title) {
-    String filter = title == 'Sản phẩm bán chạy' ? 'bestSeller' : 'sale'; // Đặt filter dựa trên title
+  Widget _buildSectionTitle(BuildContext context, String category, String title) {
+    String filter = category == 'Sản phẩm bán chạy' ? 'bestSeller' : 'sale';
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
       child: Row(
@@ -107,7 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Navigator.pushReplacementNamed(
                 context,
                 '/products',
-                arguments: {'filter': filter}, // Truyền filter làm tham số
+                arguments: {'filter': filter},
               );
             },
             child: Text(
@@ -128,10 +100,10 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         cs.CarouselSlider(
           options: cs.CarouselOptions(
-            height: 307.0, // Giữ chiều cao khung
-            enlargeCenterPage: false, // Xóa hiệu ứng phóng to
+            height: 307.0,
+            enlargeCenterPage: false,
             enableInfiniteScroll: false,
-            viewportFraction: 0.5, // Tăng để hiển thị nhiều card hơn
+            viewportFraction: 0.5,
           ),
           items: products.map((product) {
             return Builder(
@@ -147,7 +119,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildProductCard(Product product, bool useSalePrice) {
     final price = useSalePrice && product.salePrice != null ? product.salePrice! : product.price;
-    // Giả định thêm variant từ description hoặc title (nếu có)
     String variant = product.description?.split(' ').firstWhere((word) => ['iced', 'frozen', 'chilled'].contains(word.toLowerCase()), orElse: () => '') ?? '';
     String displayTitle = variant.isNotEmpty ? '$variant ${product.title}' : product.title;
 
@@ -156,17 +127,15 @@ class _HomeScreenState extends State<HomeScreen> {
       margin: EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
       child: GestureDetector(
         onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => ProductDetailPage(productId: product.id)),
-          );
+          Provider.of<ProductProvider>(context, listen: false).fetchProductDetails(product.id, context: context);
+          Navigator.pushNamed(context, '/product-detail', arguments: product.id);
         },
         child: Container(
-          width: MediaQuery.of(context).size.width * 0.6, // Điều chỉnh kích thước card
+          width: MediaQuery.of(context).size.width * 0.6,
           padding: EdgeInsets.all(12.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween, // Đảm bảo nội dung phân bố từ đầu đến cuối
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -176,7 +145,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Image.network(
                       product.image,
                       height: 120,
-                      width: double.infinity, // Sửa lại để khớp với Container
+                      width: double.infinity,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) => Icon(Icons.error, size: 50),
                     ),
@@ -261,6 +230,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<ProductProvider>(context);
+    final bestSellerProducts = provider.bestSellerProducts; // Sử dụng getter mới
+    final hotDealProducts = provider.products.where((product) => product.salePrice != null && product.salePrice! > 0).toList();
+
+    if (kDebugMode) {
+      print('Best Seller Products: ${bestSellerProducts.length} items');
+      print('Hot Deal Products: ${hotDealProducts.length} items');
+      provider.bestSellerProducts.forEach((product) {
+        print('Product: ${product.title}, Category: ${product.category}, Raw Category: ${product.category?.toLowerCase()}');
+      });
+    }
+
     return MasterLayout(
       currentIndex: 0,
       child: SingleChildScrollView(
@@ -268,10 +249,12 @@ class _HomeScreenState extends State<HomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildBanner(),
-            if (!isLoading) _buildSectionWithFilter(context, 'Sản phẩm bán chạy'),
-            if (!isLoading) _buildProductSlider(context, bestSellerProducts, false),
-            if (!isLoading) _buildSectionWithFilter(context, 'Ưu đãi hot'),
-            if (!isLoading) _buildProductSlider(context, hotDealProducts, true),
+            if (!provider.isLoading) _buildSectionWithFilter(context, 'Sản phẩm bán chạy'),
+            if (!provider.isLoading && bestSellerProducts.isNotEmpty)
+              _buildProductSlider(context, bestSellerProducts, false),
+            if (!provider.isLoading) _buildSectionWithFilter(context, 'Ưu đãi hot'),
+            if (!provider.isLoading && hotDealProducts.isNotEmpty)
+              _buildProductSlider(context, hotDealProducts, true),
           ],
         ),
       ),

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:provider/provider.dart';
 import 'package:do_an_mobile_nc/models/product_model.dart';
-import 'package:do_an_mobile_nc/theme/colors.dart'; // Import file color.dart
+import 'package:do_an_mobile_nc/theme/colors.dart';
+import 'package:do_an_mobile_nc/provider/product_provider.dart';
 import 'package:do_an_mobile_nc/config.dart';
 
 class ProductDetailPage extends StatefulWidget {
@@ -16,8 +16,6 @@ class ProductDetailPage extends StatefulWidget {
 }
 
 class _ProductDetailPageState extends State<ProductDetailPage> {
-  Product? product;
-  bool isLoading = true;
   double userRating = 3.0;
   final TextEditingController _commentController = TextEditingController();
 
@@ -25,46 +23,29 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   void initState() {
     super.initState();
     if (widget.productId != null) {
-      fetchProductDetails();
-    }
-  }
-
-  Future<void> fetchProductDetails() async {
-    try {
-      final response = await http.get(Uri.parse('${Config.baseUrl}/api/shop/products/get/${widget.productId}'));
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        setState(() {
-          product = Product.fromJson(data['data']);
-          isLoading = false;
-        });
-      } else {
-        throw Exception('Failed to load product details');
-      }
-    } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      final provider = Provider.of<ProductProvider>(context, listen: false);
+      provider.fetchProductDetails(widget.productId!);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<ProductProvider>(context);
+
     return Scaffold(
-      backgroundColor: AppColors.scaffold, // Thay Colors.white
+      backgroundColor: AppColors.scaffold,
       appBar: AppBar(
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppColors.white), // Thay màu mặc định
+          icon: Icon(Icons.arrow_back, color: AppColors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Chi tiết sản phẩm', style: TextStyle(color: AppColors.white)), // Thay màu mặc định
-        backgroundColor: AppColors.primary, // Thay Colors.brown[300]
+        title: const Text('Chi tiết sản phẩm', style: TextStyle(color: AppColors.white)),
+        backgroundColor: AppColors.primary,
         foregroundColor: AppColors.white,
       ),
-      body: isLoading
-          ? Center(child: CircularProgressIndicator(color: AppColors.primary)) // Thay màu mặc định
-          : product == null
+      body: provider.isLoading
+          ? Center(child: CircularProgressIndicator(color: AppColors.primary))
+          : provider.selectedProduct == null
               ? Center(child: Text('Product not found', style: TextStyle(color: AppColors.textSecondary)))
               : Center(
                   child: SingleChildScrollView(
@@ -72,7 +53,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     child: Card(
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       elevation: 5,
-                      color: AppColors.white, // Thay màu mặc định
+                      color: AppColors.white,
                       child: Padding(
                         padding: const EdgeInsets.all(16),
                         child: Column(
@@ -83,7 +64,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(12),
                                 child: Image.network(
-                                  product!.image,
+                                  provider.selectedProduct!.image,
                                   width: 200,
                                   height: 200,
                                   fit: BoxFit.cover,
@@ -93,12 +74,12 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              product!.title,
+                              provider.selectedProduct!.title,
                               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              product!.description ?? 'No description available',
+                              provider.selectedProduct!.description ?? 'No description available',
                               style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
                             ),
                             const SizedBox(height: 16),
@@ -106,20 +87,20 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  '${product!.price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')} đ',
+                                  '${provider.selectedProduct!.price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')} đ',
                                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                                 ),
                                 Row(
                                   children: [
                                     RatingBarIndicator(
-                                      rating: product!.averageReview,
-                                      itemBuilder: (context, index) => Icon(Icons.star, color: Colors.amber), // Giữ màu amber vì chưa có hằng số
+                                      rating: provider.selectedProduct!.averageReview,
+                                      itemBuilder: (context, index) => Icon(Icons.star, color: Colors.amber),
                                       itemCount: 5,
                                       itemSize: 20,
                                     ),
                                     SizedBox(width: 8),
                                     Text(
-                                      '(${product!.averageReview.toStringAsFixed(2)})',
+                                      '(${provider.selectedProduct!.averageReview.toStringAsFixed(2)})',
                                       style: TextStyle(color: AppColors.textSecondary),
                                     ),
                                   ],
@@ -129,7 +110,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                             const SizedBox(height: 12),
                             ElevatedButton(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary, // Thay Colors.brown[300]
+                                backgroundColor: AppColors.primary,
                                 minimumSize: Size(double.infinity, 48),
                               ),
                               onPressed: () {},
@@ -144,7 +125,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                               children: [
                                 RatingBarIndicator(
                                   rating: 4.0,
-                                  itemBuilder: (context, index) => Icon(Icons.star, color: Colors.amber), // Giữ màu amber
+                                  itemBuilder: (context, index) => Icon(Icons.star, color: Colors.amber),
                                   itemCount: 5,
                                   itemSize: 20,
                                 ),
@@ -165,7 +146,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                               allowHalfRating: true,
                               itemCount: 5,
                               itemSize: 40,
-                              itemBuilder: (context, _) => Icon(Icons.star, color: Colors.amber), // Giữ màu amber
+                              itemBuilder: (context, _) => Icon(Icons.star, color: Colors.amber),
                               onRatingUpdate: (rating) {
                                 setState(() {
                                   userRating = rating;
@@ -189,7 +170,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                                 // handle submit
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primaryLight, // Thay Colors.brown[200]
+                                backgroundColor: AppColors.primaryLight,
                                 minimumSize: Size(double.infinity, 48),
                               ),
                               child: Text("LƯU ĐÁNH GIÁ", style: TextStyle(color: AppColors.textPrimary)),
