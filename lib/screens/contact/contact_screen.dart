@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../Layout/masterlayout.dart';
 
 class ContactScreen extends StatefulWidget {
   const ContactScreen({Key? key}) : super(key: key);
@@ -15,9 +16,9 @@ class _ContactScreenState extends State<ContactScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Liên hệ')),
-      body: SingleChildScrollView(
+    return MasterLayout(
+      currentIndex: 3, // Contact tab
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

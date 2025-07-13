@@ -13,6 +13,7 @@ import 'providers/voucher_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/home/home.dart';
+import 'screens/product/product.dart'; // Thêm import này
 import 'screens/cart/cart_screen.dart';
 import 'screens/checkout/checkout_screen.dart';
 import 'screens/checkout/success_screen.dart';
@@ -44,7 +45,19 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    _isLoggedInFuture = AuthService().isLoggedIn();
+    _isLoggedInFuture = _initializeApp();
+  }
+
+  Future<bool> _initializeApp() async {
+    final authService = AuthService();
+    final isLoggedIn = await authService.isLoggedIn();
+    if (isLoggedIn) {
+      // Nếu có token, khởi tạo user data
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Provider.of<AuthProvider>(context, listen: false).initializeUser();
+      });
+    }
+    return isLoggedIn;
   }
 
   @override
@@ -88,7 +101,7 @@ class _MyAppState extends State<MyApp> {
           '/login': (context) => const LoginScreen(),
           '/register': (context) => const RegisterScreen(),
           '/home': (context) => HomeScreen(),
-          '/products': (context) => const Scaffold(body: Center(child: Text('Products Screen'))),
+          '/products': (context) => ProductListScreen(),
           '/profile': (context) => const ProfileScreen(),
           '/order-history': (context) => const OrderHistoryScreen(),
           '/search': (context) => const SearchScreen(),

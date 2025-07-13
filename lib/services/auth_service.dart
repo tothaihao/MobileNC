@@ -19,10 +19,11 @@ class AuthService {
         }),
       );
       final data = json.decode(response.body);
-      // Nếu có token, lưu vào SharedPreferences
-      if (data['token'] != null) {
+      // Nếu có token và user data, lưu vào SharedPreferences
+      if (data['token'] != null && data['user'] != null) {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('token', data['token']);
+        await prefs.setString('user', json.encode(data['user']));
       }
       return data;
     } catch (e) {
@@ -56,9 +57,10 @@ class AuthService {
 
   Future<Map<String, dynamic>> logout() async {
     try {
-      // Xóa token khỏi SharedPreferences
+      // Xóa token và user data khỏi SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('token');
+      await prefs.remove('user');
       final response = await http.post(
         Uri.parse('$baseUrl/auth/logout'),
         headers: {'Content-Type': 'application/json'},
@@ -101,5 +103,19 @@ class AuthService {
   Future<bool> isLoggedIn() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('token') != null;
+  }
+
+  // Lấy user data đã lưu từ SharedPreferences
+  Future<Map<String, dynamic>?> getSavedUser() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userData = prefs.getString('user');
+      if (userData != null) {
+        return json.decode(userData);
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
   }
 } 

@@ -34,11 +34,49 @@ class _CartScreenState extends State<CartScreen> {
       body: cartProvider.isLoading
           ? const Center(child: CircularProgressIndicator())
           : cartProvider.error != null
-              ? Center(child: Text('Lỗi: ${cartProvider.error}'))
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.error_outline, color: Colors.red, size: 48),
+                      const SizedBox(height: 16),
+                      Text('Lỗi: ${cartProvider.error}', style: TextStyle(fontSize: 16)),
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          final user = Provider.of<AuthProvider>(context, listen: false).user;
+                          if (user != null) {
+                            context.read<CartProvider>().fetchCart(user.id);
+                          }
+                        },
+                        icon: Icon(Icons.refresh),
+                        label: Text('Thử lại'),
+                      ),
+                    ],
+                  ),
+                )
               : user == null
-                  ? const Center(child: Text('Bạn chưa đăng nhập'))
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.person_outline, color: Colors.grey, size: 48),
+                          const SizedBox(height: 16),
+                          const Text('Bạn chưa đăng nhập', style: TextStyle(fontSize: 16)),
+                        ],
+                      ),
+                    )
                   : cart == null || cart.items.isEmpty
-                      ? const Center(child: Text('Giỏ hàng trống'))
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.remove_shopping_cart, color: Colors.grey, size: 48),
+                              const SizedBox(height: 16),
+                              const Text('Giỏ hàng trống', style: TextStyle(fontSize: 16)),
+                            ],
+                          ),
+                        )
                       : Column(
                           children: [
                             Expanded(

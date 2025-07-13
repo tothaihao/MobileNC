@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/order_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/order_model.dart';
+import '../../Layout/masterlayout.dart';
 
 class OrderHistoryScreen extends StatefulWidget {
   const OrderHistoryScreen({Key? key}) : super(key: key);
@@ -28,16 +29,54 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     final orderProvider = Provider.of<OrderProvider>(context);
     final user = Provider.of<AuthProvider>(context).user;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Lịch sử đơn hàng')),
-      body: orderProvider.isLoading
+    return MasterLayout(
+      currentIndex: 2, // Order history tab
+      child: orderProvider.isLoading
           ? const Center(child: CircularProgressIndicator())
           : orderProvider.error != null
-              ? Center(child: Text('Lỗi: ${orderProvider.error}'))
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.error_outline, color: Colors.red, size: 48),
+                      const SizedBox(height: 16),
+                      Text('Lỗi: ${orderProvider.error}', style: TextStyle(fontSize: 16)),
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          final user = Provider.of<AuthProvider>(context, listen: false).user;
+                          if (user != null) {
+                            context.read<OrderProvider>().fetchOrders(user.id);
+                          }
+                        },
+                        icon: Icon(Icons.refresh),
+                        label: Text('Thử lại'),
+                      ),
+                    ],
+                  ),
+                )
               : user == null
-                  ? const Center(child: Text('Bạn chưa đăng nhập'))
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.person_outline, color: Colors.grey, size: 48),
+                          const SizedBox(height: 16),
+                          const Text('Bạn chưa đăng nhập', style: TextStyle(fontSize: 16)),
+                        ],
+                      ),
+                    )
                   : orderProvider.orders.isEmpty
-                      ? const Center(child: Text('Chưa có đơn hàng nào'))
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.receipt_long, color: Colors.grey, size: 48),
+                              const SizedBox(height: 16),
+                              const Text('Chưa có đơn hàng nào', style: TextStyle(fontSize: 16)),
+                            ],
+                          ),
+                        )
                       : ListView.builder(
                           padding: const EdgeInsets.all(16),
                           itemCount: orderProvider.orders.length,

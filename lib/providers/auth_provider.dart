@@ -15,6 +15,15 @@ class AuthProvider with ChangeNotifier {
 
   final AuthService _authService = AuthService();
 
+  // Khởi tạo user data từ SharedPreferences
+  Future<void> initializeUser() async {
+    final savedUser = await _authService.getSavedUser();
+    if (savedUser != null) {
+      _user = User.fromJson(savedUser);
+      notifyListeners();
+    }
+  }
+
   void resetMessages() {
     _error = null;
     _successMessage = null;

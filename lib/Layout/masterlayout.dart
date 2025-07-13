@@ -22,7 +22,7 @@ class MasterLayout extends StatelessWidget {
         Navigator.pushReplacementNamed(context, '/products');
         break;
       case 2:
-        Navigator.pushReplacementNamed(context, '/history');
+        Navigator.pushReplacementNamed(context, '/order-history');
         break;
       case 3:
         Navigator.pushReplacementNamed(context, '/contact');

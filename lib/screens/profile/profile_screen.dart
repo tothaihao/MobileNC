@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../Layout/masterlayout.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -10,28 +11,15 @@ class ProfileScreen extends StatelessWidget {
     final user = Provider.of<AuthProvider>(context).user;
 
     if (user == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Hồ sơ')),
-        body: const Center(child: Text('Bạn chưa đăng nhập')),
+      return MasterLayout(
+        currentIndex: 4, // Profile tab
+        child: const Center(child: Text('Bạn chưa đăng nhập')),
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Hồ sơ'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await Provider.of<AuthProvider>(context, listen: false).logout();
-              if (context.mounted) {
-                Navigator.pushReplacementNamed(context, '/login');
-              }
-            },
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
+    return MasterLayout(
+      currentIndex: 4, // Profile tab
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
@@ -96,6 +84,25 @@ class ProfileScreen extends StatelessWidget {
               icon: Icons.help,
               title: 'Trợ giúp',
               onTap: () => Navigator.pushNamed(context, '/contact'),
+            ),
+            const SizedBox(height: 24),
+            // Logout Button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  await Provider.of<AuthProvider>(context, listen: false).logout();
+                  if (context.mounted) {
+                    Navigator.pushReplacementNamed(context, '/login');
+                  }
+                },
+                icon: const Icon(Icons.logout),
+                label: const Text('Đăng xuất'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                ),
+              ),
             ),
             const SizedBox(height: 24),
             // User Details

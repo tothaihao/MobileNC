@@ -126,10 +126,11 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         cs.CarouselSlider(
           options: cs.CarouselOptions(
-            height: 307.0, // Giữ chiều cao khung
-            enlargeCenterPage: false, // Xóa hiệu ứng phóng to
+            height: 307.0,
+            enlargeCenterPage: false,
             enableInfiniteScroll: false,
-            viewportFraction: 0.5, // Tăng để hiển thị nhiều card hơn
+            viewportFraction: 0.5,
+            padEnds: false, // Sát lề trái/phải
           ),
           items: products.map((product) {
             return Builder(
@@ -151,7 +152,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Card(
       elevation: 4,
-      margin: EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+      margin: EdgeInsets.symmetric(horizontal: 2.0, vertical: 4.0),
       child: GestureDetector(
         onTap: () {
           Navigator.push(
