@@ -26,17 +26,8 @@ class _CartScreenState extends State<CartScreen> {
   @override
   Widget build(BuildContext context) {
     final cartProvider = Provider.of<CartProvider>(context);
-    final authProvider = Provider.of<AuthProvider>(context);
+    final user = Provider.of<AuthProvider>(context).user;
     final cart = cartProvider.cart;
-
-    if (authProvider.user == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Giỏ hàng')),
-        body: const Center(
-          child: Text('Vui lòng đăng nhập để xem giỏ hàng'),
-        ),
-      );
-    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('Giỏ hàng')),
@@ -44,23 +35,25 @@ class _CartScreenState extends State<CartScreen> {
           ? const Center(child: CircularProgressIndicator())
           : cartProvider.error != null
               ? Center(child: Text('Lỗi: ${cartProvider.error}'))
-              : cart == null || cart.items.isEmpty
-                  ? const Center(child: Text('Giỏ hàng trống'))
-                  : Column(
-                      children: [
-                        Expanded(
-                          child: ListView.builder(
-                            padding: const EdgeInsets.all(16),
-                            itemCount: cart!.items.length,
-                            itemBuilder: (context, index) {
-                              final item = cart.items[index];
-                              return _buildCartItem(item, authProvider.user!.id);
-                            },
-                          ),
+              : user == null
+                  ? const Center(child: Text('Bạn chưa đăng nhập'))
+                  : cart == null || cart.items.isEmpty
+                      ? const Center(child: Text('Giỏ hàng trống'))
+                      : Column(
+                          children: [
+                            Expanded(
+                              child: ListView.builder(
+                                padding: const EdgeInsets.all(16),
+                                itemCount: cart.items.length,
+                                itemBuilder: (context, index) {
+                                  final item = cart.items[index];
+                                  return _buildCartItem(item, user.id);
+                                },
+                              ),
+                            ),
+                            _buildTotalSection(cart),
+                          ],
                         ),
-                        _buildTotalSection(cart),
-                      ],
-                    ),
     );
   }
 

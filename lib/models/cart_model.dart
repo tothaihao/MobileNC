@@ -42,7 +42,6 @@ class Cart {
   final String id;
   final String userId;
   final List<CartItem> items;
-  final int totalPrice;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -50,10 +49,16 @@ class Cart {
     required this.id,
     required this.userId,
     required this.items,
-    required this.totalPrice,
     this.createdAt,
     this.updatedAt,
   });
+
+  int get totalPrice {
+    return items.fold(0, (total, item) {
+      final int price = item.salePrice ?? item.price;
+      return total + (price * item.quantity);
+    });
+  }
 
   factory Cart.fromJson(Map<String, dynamic> json) {
     var itemsList = (json['items'] as List).map((e) => CartItem.fromJson(e)).toList();
@@ -61,7 +66,6 @@ class Cart {
       id: json['_id'],
       userId: json['userId'],
       items: itemsList,
-      totalPrice: json['totalPrice'],
       createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
       updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
     );
@@ -72,9 +76,8 @@ class Cart {
       '_id': id,
       'userId': userId,
       'items': items.map((e) => e.toJson()).toList(),
-      'totalPrice': totalPrice,
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
     };
   }
-} 
+}

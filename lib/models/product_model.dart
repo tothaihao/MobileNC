@@ -40,7 +40,7 @@ class Product {
       price: json['price'],
       salePrice: json['salePrice'],
       totalStock: json['totalStock'],
-      averageReview: json['averageReview'].toDouble(),
+      averageReview: (json['averageReview'] ?? 0).toDouble(),
       stockStatus: json['stockStatus'],
       createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
       updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,

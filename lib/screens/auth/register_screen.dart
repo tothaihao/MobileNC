@@ -16,6 +16,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String _email = '';
   String _password = '';
 
+  String? _validateName(String? value) {
+    if (value == null || value.isEmpty) return 'Nhập tên người dùng';
+    if (value.length < 2) return 'Tên phải có ít nhất 2 ký tự';
+    return null;
+  }
+
+  String? _validateEmail(String? value) {
+    if (value == null || value.isEmpty) return 'Nhập email';
+    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+      return 'Email không hợp lệ';
+    }
+    return null;
+  }
+
+  String? _validatePassword(String? value) {
+    if (value == null || value.isEmpty) return 'Nhập mật khẩu';
+    if (value.length < 6) return 'Mật khẩu phải có ít nhất 6 ký tự';
+    if (!RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)').hasMatch(value)) {
+      return 'Mật khẩu phải có chữ hoa, chữ thường và số';
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
@@ -105,7 +128,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   labelText: 'User Name',
                   border: OutlineInputBorder(),
                 ),
-                validator: (value) => value == null || value.isEmpty ? 'Nhập tên' : null,
+                validator: _validateName,
                 onSaved: (value) => _name = value ?? '',
               ),
               const SizedBox(height: 16),
@@ -115,7 +138,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.emailAddress,
-                validator: (value) => value == null || value.isEmpty ? 'Nhập email' : null,
+                validator: _validateEmail,
                 onSaved: (value) => _email = value ?? '',
               ),
               const SizedBox(height: 16),
@@ -125,7 +148,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   border: OutlineInputBorder(),
                 ),
                 obscureText: true,
-                validator: (value) => value == null || value.isEmpty ? 'Nhập mật khẩu' : null,
+                validator: _validatePassword,
                 onSaved: (value) => _password = value ?? '',
               ),
               const SizedBox(height: 24),

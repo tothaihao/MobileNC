@@ -1,21 +1,21 @@
 class Voucher {
   final String id;
   final String code;
-  final int discount;
+  final String type; // "percent" or "fixed"
+  final int value;
+  final int? minOrderAmount;
   final int? maxDiscount;
-  final int? minOrderValue;
-  final DateTime? startDate;
-  final DateTime? endDate;
+  final DateTime? expiredAt;
   final bool isActive;
 
   Voucher({
     required this.id,
     required this.code,
-    required this.discount,
+    required this.type,
+    required this.value,
+    this.minOrderAmount,
     this.maxDiscount,
-    this.minOrderValue,
-    this.startDate,
-    this.endDate,
+    this.expiredAt,
     required this.isActive,
   });
 
@@ -23,11 +23,11 @@ class Voucher {
     return Voucher(
       id: json['_id'],
       code: json['code'],
-      discount: json['discount'],
+      type: json['type'],
+      value: json['value'],
+      minOrderAmount: json['minOrderAmount'],
       maxDiscount: json['maxDiscount'],
-      minOrderValue: json['minOrderValue'],
-      startDate: json['startDate'] != null ? DateTime.parse(json['startDate']) : null,
-      endDate: json['endDate'] != null ? DateTime.parse(json['endDate']) : null,
+      expiredAt: json['expiredAt'] != null ? DateTime.parse(json['expiredAt']) : null,
       isActive: json['isActive'] ?? true,
     );
   }
@@ -36,12 +36,17 @@ class Voucher {
     return {
       '_id': id,
       'code': code,
-      'discount': discount,
+      'type': type,
+      'value': value,
+      'minOrderAmount': minOrderAmount,
       'maxDiscount': maxDiscount,
-      'minOrderValue': minOrderValue,
-      'startDate': startDate?.toIso8601String(),
-      'endDate': endDate?.toIso8601String(),
+      'expiredAt': expiredAt?.toIso8601String(),
       'isActive': isActive,
     };
   }
-} 
+}
+
+extension VoucherX on Voucher {
+  String get displayValue =>
+      type == 'percent' ? '$value%' : '$value VNĐ';
+}

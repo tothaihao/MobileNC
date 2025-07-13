@@ -4,7 +4,6 @@ import '../../providers/product_provider.dart';
 import '../../providers/review_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/auth_provider.dart';
-import '../../models/product_model.dart';
 import '../../models/review_model.dart';
 
 class ProductDetailScreen extends StatefulWidget {

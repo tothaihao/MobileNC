@@ -13,7 +13,6 @@ import 'providers/voucher_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/home/home.dart';
-import 'screens/product/product_detail_screen.dart';
 import 'screens/cart/cart_screen.dart';
 import 'screens/checkout/checkout_screen.dart';
 import 'screens/checkout/success_screen.dart';

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+  import 'package:flutter/material.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 
@@ -21,19 +21,26 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> login(String email, String password) async {
+  Future<bool> login(String email, String password, {bool rememberMe = false}) async {
     _isLoading = true;
     _error = null;
     _successMessage = null;
     notifyListeners();
-    final res = await _authService.login(email, password);
+    final res = await _authService.login(email, password, rememberMe: rememberMe);
     if (res['success'] == true && res['user'] != null) {
       _user = User.fromJson(res['user']);
       _isLoading = false;
       notifyListeners();
       return true;
     } else {
-      _error = res['message'] ?? 'Đăng nhập thất bại';
+      // Xử lý các trường hợp lỗi trả về từ backend
+      if (res['message'] != null) {
+        _error = res['message'];
+      } else if (res['error'] != null) {
+        _error = res['error'];
+      } else {
+        _error = 'Đăng nhập thất bại';
+      }
       _isLoading = false;
       notifyListeners();
       return false;
@@ -47,12 +54,19 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
     final res = await _authService.register(name, email, password);
     if (res['message']?.contains('thành công') == true) {
-      _successMessage = 'Đăng ký thành công';
+      _successMessage = res['message'];
       _isLoading = false;
       notifyListeners();
       return true;
     } else {
-      _error = res['message'] ?? 'Đăng ký thất bại';
+      // Xử lý lỗi trả về từ backend (email hoặc userName đã tồn tại)
+      if (res['message'] != null) {
+        _error = res['message'];
+      } else if (res['error'] != null) {
+        _error = res['error'];
+      } else {
+        _error = 'Đăng ký thất bại';
+      }
       _isLoading = false;
       notifyListeners();
       return false;
@@ -62,8 +76,13 @@ class AuthProvider with ChangeNotifier {
   Future<void> logout() async {
     _isLoading = true;
     notifyListeners();
-    await _authService.logout();
+    final res = await _authService.logout();
     _user = null;
+    if (res['success'] == true) {
+      _successMessage = res['message'] ?? 'Đăng xuất thành công!';
+    } else {
+      _error = res['message'] ?? 'Đăng xuất thất bại';
+    }
     _isLoading = false;
     notifyListeners();
   }

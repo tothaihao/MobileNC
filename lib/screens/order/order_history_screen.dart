@@ -26,16 +26,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     final orderProvider = Provider.of<OrderProvider>(context);
-    final authProvider = Provider.of<AuthProvider>(context);
-
-    if (authProvider.user == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Lịch sử đơn hàng')),
-        body: const Center(
-          child: Text('Vui lòng đăng nhập để xem lịch sử đơn hàng'),
-        ),
-      );
-    }
+    final user = Provider.of<AuthProvider>(context).user;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Lịch sử đơn hàng')),
@@ -43,16 +34,18 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
           ? const Center(child: CircularProgressIndicator())
           : orderProvider.error != null
               ? Center(child: Text('Lỗi: ${orderProvider.error}'))
-              : orderProvider.orders.isEmpty
-                  ? const Center(child: Text('Chưa có đơn hàng nào'))
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: orderProvider.orders.length,
-                      itemBuilder: (context, index) {
-                        final order = orderProvider.orders[index];
-                        return _buildOrderCard(order);
-                      },
-                    ),
+              : user == null
+                  ? const Center(child: Text('Bạn chưa đăng nhập'))
+                  : orderProvider.orders.isEmpty
+                      ? const Center(child: Text('Chưa có đơn hàng nào'))
+                      : ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: orderProvider.orders.length,
+                          itemBuilder: (context, index) {
+                            final order = orderProvider.orders[index];
+                            return _buildOrderCard(order);
+                          },
+                        ),
     );
   }
 
@@ -76,23 +69,24 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                     'Đơn hàng #${order.id.substring(0, 8)}',
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  _buildStatusChip(order.status),
+                  _buildStatusChip(order.orderStatus),
                 ],
               ),
               const SizedBox(height: 8),
-              Text('Số lượng sản phẩm: ${order.items.length}'),
+              Text('Số lượng sản phẩm: ${order.cartItems.length}'),
               const SizedBox(height: 8),
               Text(
-                'Tổng tiền: ${order.totalPrice.toStringAsFixed(0)} VNĐ',
+                'Tổng tiền: ${order.totalAmount.toStringAsFixed(0)} VNĐ',
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   color: Colors.green,
                 ),
               ),
-              if (order.address != null) ...[
-                const SizedBox(height: 8),
-                Text('Địa chỉ: ${order.address}'),
-              ],
+              // Bỏ phần địa chỉ vì không có trường address trong model Order
+              // if (order.address != null) ...[
+              //   const SizedBox(height: 8),
+              //   Text('Địa chỉ: ${order.address}'),
+              // ],
               if (order.createdAt != null) ...[
                 const SizedBox(height: 8),
                 Text(
@@ -186,25 +180,26 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                 child: ListView(
                   controller: scrollController,
                   children: [
-                    ...order.items.map((item) => _buildOrderItem(item)),
+                    ...order.cartItems.map((item) => _buildOrderItem(item)),
                     const Divider(),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text('Tổng cộng:', style: TextStyle(fontWeight: FontWeight.bold)),
                         Text(
-                          '${order.totalPrice.toStringAsFixed(0)} VNĐ',
+                          '${order.totalAmount.toStringAsFixed(0)} VNĐ',
                           style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
                         ),
                       ],
                     ),
                     const SizedBox(height: 16),
-                    if (order.note != null) ...[
-                      const Text('Ghi chú:', style: TextStyle(fontWeight: FontWeight.bold)),
-                      Text(order.note!),
-                      const SizedBox(height: 16),
-                    ],
-                    _buildStatusChip(order.status),
+                    // Bỏ phần note vì không có trường note trong model Order
+                    // if (order.note != null) ...[
+                    //   const Text('Ghi chú:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    //   Text(order.note!),
+                    //   const SizedBox(height: 16),
+                    // ],
+                    _buildStatusChip(order.orderStatus),
                   ],
                 ),
               ),

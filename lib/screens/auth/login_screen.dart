@@ -12,8 +12,43 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  String _email = '';
-  String _password = '';
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _emailFocus = FocusNode();
+  final _passwordFocus = FocusNode();
+  bool _rememberMe = false;
+
+  String? _validateEmail(String? value) {
+    if (value == null || value.isEmpty) return 'Nhập email';
+    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+      return 'Email không hợp lệ';
+    }
+    return null;
+  }
+
+  String? _validatePassword(String? value) {
+    if (value == null || value.isEmpty) return 'Nhập mật khẩu';
+    if (value.length < 6) return 'Mật khẩu phải có ít nhất 6 ký tự';
+    return null;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Tự động focus vào ô email khi mở form
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _emailFocus.requestFocus();
+    });
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _emailFocus.dispose();
+    _passwordFocus.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -100,23 +135,55 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 16),
               TextFormField(
+                controller: _emailController,
+                focusNode: _emailFocus,
                 decoration: const InputDecoration(
                   labelText: 'Email',
                   border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.emailAddress,
-                validator: (value) => value == null || value.isEmpty ? 'Nhập email' : null,
-                onSaved: (value) => _email = value ?? '',
+                validator: _validateEmail,
+                onChanged: (_) => authProvider.resetMessages(),
+                onFieldSubmitted: (_) {
+                  _passwordFocus.requestFocus();
+                },
+                // onSaved không cần thiết vì đã dùng controller
               ),
               const SizedBox(height: 16),
               TextFormField(
+                controller: _passwordController,
+                focusNode: _passwordFocus,
                 decoration: const InputDecoration(
                   labelText: 'Password',
                   border: OutlineInputBorder(),
                 ),
                 obscureText: true,
-                validator: (value) => value == null || value.isEmpty ? 'Nhập mật khẩu' : null,
-                onSaved: (value) => _password = value ?? '',
+                validator: _validatePassword,
+                onChanged: (_) => authProvider.resetMessages(),
+                onFieldSubmitted: (_) async {
+                  if (_formKey.currentState!.validate()) {
+                    _formKey.currentState!.save();
+                    final success = await authProvider.login(
+                      _emailController.text, 
+                      _passwordController.text,
+                      rememberMe: _rememberMe
+                    );
+                    if (success && mounted) {
+                      Navigator.pushReplacementNamed(context, '/home');
+                    }
+                  }
+                },
+                // onSaved không cần thiết vì đã dùng controller
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Checkbox(
+                    value: _rememberMe,
+                    onChanged: (value) => setState(() => _rememberMe = value!),
+                  ),
+                  const Text('Ghi nhớ đăng nhập'),
+                ],
               ),
               const SizedBox(height: 24),
               if (authProvider.error != null)
@@ -142,7 +209,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       : () async {
                           if (_formKey.currentState!.validate()) {
                             _formKey.currentState!.save();
-                            final success = await authProvider.login(_email, _password);
+                            final success = await authProvider.login(
+                              _emailController.text, 
+                              _passwordController.text,
+                              rememberMe: _rememberMe
+                            );
                             if (success && mounted) {
                               Navigator.pushReplacementNamed(context, '/home');
                             }

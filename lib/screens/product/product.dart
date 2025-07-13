@@ -24,7 +24,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
     'Trà sữa': 'traSua',
     'Bánh ngọt': 'banhNgot',
     'Đá xay': 'daXay',
-    'Sản phẩm bán chạy': 'bestSeller',
   };
 
   final List<String> categories = [
@@ -33,7 +32,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
     'Trà sữa',
     'Bánh ngọt',
     'Đá xay',
-    'Sản phẩm bán chạy',
   ];
 
   @override
@@ -44,21 +42,16 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
   Future<void> fetchProducts() async {
     try {
-      final query = categoryMap[selectedCategory] ?? ''; // Lấy giá trị category từ map
-      final response = await http.get(Uri.parse('${Config.baseUrl}/api/shop/products/get?category=$query')); // Sử dụng Config.baseUrl
+      final query = categoryMap[selectedCategory] ?? '';
+      final url = query.isNotEmpty
+          ? '${Config.baseUrl}/api/shop/products/get?category=$query'
+          : '${Config.baseUrl}/api/shop/products/get';
+      final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         setState(() {
-          // Lọc sản phẩm dựa trên selectedCategory
           products = (data['data'] as List)
               .map((json) => Product.fromJson(json))
-              .where((product) {
-                final category = product.category?.toLowerCase() ?? '';
-                // Chỉ giữ bestSeller khi selectedCategory là 'Sản phẩm bán chạy', ngược lại loại bỏ
-                return selectedCategory == 'Sản phẩm bán chạy'
-                    ? category == 'bestseller'
-                    : category != 'bestseller';
-              })
               .toList();
           isLoading = false;
         });

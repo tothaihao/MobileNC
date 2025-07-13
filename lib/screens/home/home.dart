@@ -6,6 +6,9 @@ import 'package:do_an_mobile_nc/Layout/masterlayout.dart';
 import 'package:do_an_mobile_nc/models/product_model.dart';
 import 'package:do_an_mobile_nc/screens/product/product_detail_screen.dart';
 import 'package:do_an_mobile_nc/config.dart'; // Import config.dart
+import 'package:provider/provider.dart';
+import 'package:do_an_mobile_nc/providers/cart_provider.dart';
+import 'package:do_an_mobile_nc/providers/auth_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -18,9 +21,9 @@ class _HomeScreenState extends State<HomeScreen> {
     'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT0RyiFla98L-B6yXCLbOiELZktX5jHkwQdZw&s',
     'https://enjoycoffee.vn/wp-content/uploads/2020/01/coffee.2-810x524-1.jpg',
   ];
-  
-  List<Product> bestSellerProducts = [];
+
   List<Product> hotDealProducts = [];
+  List<Product> allProducts = [];
   bool isLoading = true;
 
   @override
@@ -30,28 +33,33 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> fetchProducts() async {
+    setState(() {
+      isLoading = true;
+    });
     try {
-      final response = await http.get(Uri.parse('${Config.baseUrl}/api/shop/products/get')); // Sử dụng Config.baseUrl
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final allProducts = (data['data'] as List).map((json) => Product.fromJson(json)).toList();
-        
-        // Lọc sản phẩm bestseller
-        bestSellerProducts = allProducts
-            .where((product) => product.category.toLowerCase() == 'bestseller')
-            .toList();
+      // Gọi song song 2 API: 1 cho tất cả sản phẩm, 1 cho ưu đãi hot (discount=true)
+      final allResFuture = http.get(Uri.parse('${Config.baseUrl}/api/shop/products/get'));
+      final hotDealResFuture = http.get(Uri.parse('${Config.baseUrl}/api/shop/products/get?discount=true'));
+      final allRes = await allResFuture;
+      final hotDealRes = await hotDealResFuture;
 
-        // Lọc sản phẩm ưu đãi (có salePrice)
-        hotDealProducts = allProducts
-            .where((product) => product.salePrice != null && product.salePrice! > 0)
-            .toList();
-
-        setState(() {
-          isLoading = false;
-        });
+      if (allRes.statusCode == 200) {
+        final data = json.decode(allRes.body);
+        allProducts = (data['data'] as List).map((json) => Product.fromJson(json)).toList();
       } else {
-        throw Exception('Failed to load products, status: ${response.statusCode}');
+        throw Exception('Failed to load all products, status: ${allRes.statusCode}');
       }
+
+      if (hotDealRes.statusCode == 200) {
+        final data = json.decode(hotDealRes.body);
+        hotDealProducts = (data['data'] as List).map((json) => Product.fromJson(json)).toList();
+      } else {
+        throw Exception('Failed to load hot deal products, status: ${hotDealRes.statusCode}');
+      }
+
+      setState(() {
+        isLoading = false;
+      });
     } catch (e) {
       setState(() {
         isLoading = false;
@@ -79,16 +87,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildSectionWithFilter(BuildContext context, String title) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionTitle(context, title),
-      ],
-    );
-  }
-
-  Widget _buildSectionTitle(BuildContext context, String title) {
-    String filter = title == 'Sản phẩm bán chạy' ? 'bestSeller' : 'sale'; // Đặt filter dựa trên title
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
       child: Row(
@@ -107,7 +105,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Navigator.pushReplacementNamed(
                 context,
                 '/products',
-                arguments: {'filter': filter}, // Truyền filter làm tham số
+                arguments: null, // Không truyền filter không hợp lý
               );
             },
             child: Text(
@@ -147,9 +145,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildProductCard(Product product, bool useSalePrice) {
     final price = useSalePrice && product.salePrice != null ? product.salePrice! : product.price;
-    // Giả định thêm variant từ description hoặc title (nếu có)
     String variant = product.description?.split(' ').firstWhere((word) => ['iced', 'frozen', 'chilled'].contains(word.toLowerCase()), orElse: () => '') ?? '';
     String displayTitle = variant.isNotEmpty ? '$variant ${product.title}' : product.title;
+    final isOutOfStock = product.stockStatus == 'outOfStock';
 
     return Card(
       elevation: 4,
@@ -162,11 +160,11 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         },
         child: Container(
-          width: MediaQuery.of(context).size.width * 0.6, // Điều chỉnh kích thước card
+          width: MediaQuery.of(context).size.width * 0.6,
           padding: EdgeInsets.all(12.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween, // Đảm bảo nội dung phân bố từ đầu đến cuối
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -176,7 +174,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Image.network(
                       product.image,
                       height: 120,
-                      width: double.infinity, // Sửa lại để khớp với Container
+                      width: double.infinity,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) => Icon(Icons.error, size: 50),
                     ),
@@ -200,12 +198,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '${product.salePrice!.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')} đ',
+                          formatCurrency(product.salePrice!),
                           style: TextStyle(color: Colors.green, fontSize: 14),
                         ),
                         SizedBox(height: 4),
                         Text(
-                          '${product.price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')} đ',
+                          formatCurrency(product.price),
                           style: TextStyle(
                             color: Colors.grey,
                             decoration: TextDecoration.lineThrough,
@@ -216,7 +214,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     )
                   else
                     Text(
-                      '${price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')} đ',
+                      formatCurrency(price),
                       style: TextStyle(color: Colors.green, fontSize: 14),
                     ),
                 ],
@@ -234,29 +232,60 @@ class _HomeScreenState extends State<HomeScreen> {
                   Spacer(),
                   IconButton(
                     icon: Icon(Icons.favorite_border, color: Colors.grey),
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Đã thêm ${product.title} vào yêu thích!')),
-                      );
-                    },
+                    onPressed: isOutOfStock
+                        ? null
+                        : () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Đã thêm ${product.title} vào yêu thích!')),
+                            );
+                          },
                     iconSize: 24,
                   ),
-                  IconButton(
-                    icon: Icon(Icons.add_shopping_cart, color: Colors.brown),
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Đã thêm ${product.title} vào giỏ hàng!')),
-                      );
-                    },
-                    iconSize: 24,
+                  Consumer<CartProvider>(
+                    builder: (context, cartProvider, _) => IconButton(
+                      icon: Icon(Icons.add_shopping_cart, color: isOutOfStock ? Colors.grey : Colors.brown),
+                      onPressed: isOutOfStock
+                          ? null
+                          : () async {
+                              final user = Provider.of<AuthProvider>(context, listen: false).user;
+                              if (user == null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Vui lòng đăng nhập để thêm vào giỏ hàng!')),
+                                );
+                                return;
+                              }
+                              await cartProvider.addToCart(user.id, product.id, 1);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Đã thêm ${product.title} vào giỏ hàng!')),
+                                );
+                              }
+                            },
+                      iconSize: 24,
+                    ),
                   ),
                 ],
               ),
+              if (isOutOfStock)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Text(
+                    'Hết hàng',
+                    style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                  ),
+                ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  String formatCurrency(int value) {
+    return value.toString().replaceAllMapped(
+      RegExp(r'(\\d{1,3})(?=(\\d{3})+(?!\\d))'),
+      (Match m) => '${m[1]}.',
+    ) + ' đ';
   }
 
   @override
@@ -268,10 +297,10 @@ class _HomeScreenState extends State<HomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildBanner(),
-            if (!isLoading) _buildSectionWithFilter(context, 'Sản phẩm bán chạy'),
-            if (!isLoading) _buildProductSlider(context, bestSellerProducts, false),
             if (!isLoading) _buildSectionWithFilter(context, 'Ưu đãi hot'),
             if (!isLoading) _buildProductSlider(context, hotDealProducts, true),
+            if (!isLoading) _buildSectionWithFilter(context, 'Tất cả sản phẩm'),
+            if (!isLoading) _buildProductSlider(context, allProducts, false),
           ],
         ),
       ),

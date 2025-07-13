@@ -20,7 +20,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _phoneController = TextEditingController();
   final _noteController = TextEditingController();
   final _voucherController = TextEditingController();
-  String? _selectedVoucher;
 
   @override
   void initState() {
@@ -38,24 +37,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Widget build(BuildContext context) {
     final cartProvider = Provider.of<CartProvider>(context);
     final voucherProvider = Provider.of<VoucherProvider>(context);
-    final authProvider = Provider.of<AuthProvider>(context);
+    final user = Provider.of<AuthProvider>(context).user;
     final cart = cartProvider.cart;
 
-    if (authProvider.user == null) {
+    if (user == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Thanh toán')),
-        body: const Center(
-          child: Text('Vui lòng đăng nhập để thanh toán'),
-        ),
+        body: const Center(child: Text('Bạn chưa đăng nhập')),
       );
     }
 
     if (cart == null || cart.items.isEmpty) {
       return Scaffold(
         appBar: AppBar(title: const Text('Thanh toán')),
-        body: const Center(
-          child: Text('Giỏ hàng trống'),
-        ),
+        body: const Center(child: Text('Giỏ hàng trống')),
       );
     }
 
@@ -160,7 +155,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
-                    'Giảm ${voucherProvider.checkedVoucher!.discount}%',
+                    voucherProvider.checkedVoucher!.type == 'percent'
+                      ? 'Giảm ${voucherProvider.checkedVoucher!.value}%'
+                      : 'Giảm ${voucherProvider.checkedVoucher!.value} VNĐ',
                     style: const TextStyle(color: Colors.green),
                   ),
                 ),
@@ -223,22 +220,34 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final user = context.read<AuthProvider>().user!;
+    // TODO: Lấy addressId thực tế từ user/address provider, hiện tại chỉ demo bằng null
+    final String? addressId = null; // Thay bằng id thực tế nếu có
+    final String paymentMethod = 'cash'; // Hoặc cho user chọn
+    final String? voucherCode = _voucherController.text.isNotEmpty ? _voucherController.text : null;
+
+    if (addressId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng chọn địa chỉ giao hàng!')),
+      );
+      return;
+    }
+
     final order = Order(
       id: '',
       userId: user.id,
-      items: cart.items.map((item) => OrderItem(
+      cartItems: cart.items.map((item) => OrderItem(
         productId: item.productId,
         title: item.title,
         image: item.image,
         price: item.price,
         quantity: item.quantity,
-        salePrice: item.salePrice,
       )).toList(),
-      totalPrice: cart.totalPrice,
-      status: 'pending',
-      address: _addressController.text,
-      phone: _phoneController.text,
-      note: _noteController.text.isNotEmpty ? _noteController.text : null,
+      totalAmount: cart.totalPrice,
+      orderStatus: 'pending',
+      addressId: addressId,
+      voucherCode: voucherCode,
+      paymentMethod: paymentMethod,
+      paymentStatus: 'pending',
     );
 
     final success = await context.read<OrderProvider>().createOrder(order);
@@ -246,4 +255,4 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       Navigator.pushReplacementNamed(context, '/success');
     }
   }
-} 
+}

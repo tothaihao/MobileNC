@@ -9,8 +9,8 @@ class ProductService {
   Future<List<Product>> fetchProducts() async {
     final response = await http.get(Uri.parse(baseUrl));
     if (response.statusCode == 200) {
-      final List data = json.decode(response.body);
-      return data.map((e) => Product.fromJson(e)).toList();
+      final data = json.decode(response.body);
+      return (data['data'] as List).map((e) => Product.fromJson(e)).toList();
     } else {
       throw Exception('Failed to load products');
     }
@@ -20,9 +20,9 @@ class ProductService {
     final response = await http.get(Uri.parse('$baseUrl/$id'));
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      return Product.fromJson(data);
+      return Product.fromJson(data['data']);
     } else {
       throw Exception('Failed to load product detail');
     }
   }
-} 
+}

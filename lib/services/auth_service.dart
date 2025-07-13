@@ -1,11 +1,13 @@
+
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_config.dart';
 
 class AuthService {
   final String baseUrl = AppConfig.baseUrl;
 
-  Future<Map<String, dynamic>> login(String email, String password) async {
+  Future<Map<String, dynamic>> login(String email, String password, {bool rememberMe = false}) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/auth/login'),
@@ -13,9 +15,15 @@ class AuthService {
         body: json.encode({
           'email': email,
           'password': password,
+          'rememberMe': rememberMe,
         }),
       );
       final data = json.decode(response.body);
+      // Nếu có token, lưu vào SharedPreferences
+      if (data['token'] != null) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('token', data['token']);
+      }
       return data;
     } catch (e) {
       return {
@@ -48,6 +56,9 @@ class AuthService {
 
   Future<Map<String, dynamic>> logout() async {
     try {
+      // Xóa token khỏi SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('token');
       final response = await http.post(
         Uri.parse('$baseUrl/auth/logout'),
         headers: {'Content-Type': 'application/json'},
@@ -63,8 +74,13 @@ class AuthService {
   }
 
   // Optional: Lấy thông tin user hiện tại nếu có token
-  Future<Map<String, dynamic>> getCurrentUser(String token) async {
+  Future<Map<String, dynamic>> getCurrentUser() async {
     try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+      if (token == null) {
+        return {'success': false, 'message': 'Chưa đăng nhập'};
+      }
       final response = await http.get(
         Uri.parse('$baseUrl/auth/me'),
         headers: {
@@ -83,10 +99,7 @@ class AuthService {
   }
 
   Future<bool> isLoggedIn() async {
-    // Example: check if token exists in storage
-    // Replace with your actual logic2
-    
-    // return await SecureStorage().hasToken();
-    return false; // or your real check
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('token') != null;
   }
 } 

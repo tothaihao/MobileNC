@@ -1,22 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
-import '../../models/user_model.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
-    final user = authProvider.user;
+    final user = Provider.of<AuthProvider>(context).user;
 
     if (user == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Hồ sơ')),
-        body: const Center(
-          child: Text('Vui lòng đăng nhập'),
-        ),
+        body: const Center(child: Text('Bạn chưa đăng nhập')),
       );
     }
 
@@ -27,7 +23,7 @@ class ProfileScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
-              await authProvider.logout();
+              await Provider.of<AuthProvider>(context, listen: false).logout();
               if (context.mounted) {
                 Navigator.pushReplacementNamed(context, '/login');
               }
@@ -51,7 +47,7 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              user.name,
+              user.userName,
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
@@ -114,9 +110,7 @@ class ProfileScreen extends StatelessWidget {
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 16),
-                    _buildDetailRow('Tên', user.name),
-                    if (user.phone != null) _buildDetailRow('Số điện thoại', user.phone!),
-                    if (user.address != null) _buildDetailRow('Địa chỉ', user.address!),
+                    _buildDetailRow('Tên', user.userName),
                     _buildDetailRow('Vai trò', user.role ?? 'Khách hàng'),
                   ],
                 ),
