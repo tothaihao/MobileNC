@@ -83,6 +83,16 @@ class MasterLayout extends StatelessWidget {
           BottomNavigationBarItem(icon: Icon(Icons.person), label: ''),
         ],
       ),
+       floatingActionButton: FloatingActionButton(
+    onPressed: () {
+      Navigator.pushNamed(context, '/chatbot');
+    },
+    backgroundColor: AppColors.primary,
+    child: const Icon(Icons.chat, color: Colors.white),
+  ),
+  floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+
     );
+    
   }
 }

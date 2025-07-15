@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:do_an_mobile_nc/provider/product_provider.dart';
+import 'chatbot/chat_bot.dart';
 
 // USER SCREEN
 import 'Screen/home.dart';
@@ -44,6 +45,7 @@ class MainApp extends StatelessWidget {
         initialRoute: '/', // Bạn có thể đổi thành '/admin' nếu muốn vào admin trước
         routes: {
           // USER ROUTES
+          '/chatbot': (context) => const ChatbotPage(),
           '/home': (context) => const HomeScreen(),
           '/products': (context) => const ProductListScreen(),
           '/profile': (context) => const UserProfilePage(),
