@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
-import 'user_detail_page.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:do_an_mobile_nc/config.dart';
+import 'package:do_an_mobile_nc/models/user_model.dart';
+import 'package:do_an_mobile_nc/theme/colors.dart';
+import 'package:do_an_mobile_nc/admin/pages/user_detail_page.dart';
 
 class UserPage extends StatefulWidget {
   const UserPage({Key? key}) : super(key: key);
@@ -9,209 +14,311 @@ class UserPage extends StatefulWidget {
 }
 
 class _UserPageState extends State<UserPage> {
-  final List<Map<String, dynamic>> users = [
-    {
-      'id': '671b3a5e6533ab77e8d68b47',
-      'name': 'Su',
-      'email': 'Su@gmail.com',
-      'role': 'admin',
-      'avatar': null,
-    },
-    {
-      'id': '671b3aa46533ab77e8d68b4b',
-      'name': 'Tan',
-      'email': 'nhuttan288204@gmail.com',
-      'role': 'user',
-      'avatar': null,
-    },
-    {
-      'id': '67d520153ab0ac8598a4e4c2',
-      'name': 'Lam',
-      'email': 'Lam@gmail.com',
-      'role': 'user',
-      'avatar': null,
-    },
-    // ... Thêm user khác
-  ];
-
+  List<User> users = [];
+  bool isLoading = true;
   String searchText = '';
   String selectedRole = 'Tất cả';
-
   final List<String> roles = ['Tất cả', 'admin', 'user'];
+
+  @override
+  void initState() {
+    super.initState();
+    fetchUsers();
+  }
+
+  Future<void> fetchUsers() async {
+    try {
+      setState(() => isLoading = true);
+      final response = await http.get(Uri.parse('${Config.baseUrl}/api/admin/users'));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        List<dynamic> userList;
+        if (data is List) {
+          userList = data;
+        } else if (data is Map && data['data'] is List) {
+          userList = data['data'];
+        } else if (data is Map && data['users'] is List) {
+          userList = data['users'];
+        } else {
+          userList = [];
+        }
+
+        setState(() {
+          users = userList.map((e) => User.fromJson(e)).toList();
+          isLoading = false;
+        });
+      } else {
+        throw Exception('Status code: ${response.statusCode}');
+      }
+    } catch (e) {
+      setState(() => isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi tải người dùng: $e')));
+    }
+  }
+
+  Future<void> deleteUser(String id) async {
+    try {
+      final userToDelete = users.firstWhere((u) => u.id == id);
+      final adminCount = users.where((u) => u.role == 'admin').length;
+
+      if (userToDelete.role == 'admin' && adminCount <= 1) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('⚠️ Không thể xóa admin cuối cùng!')),
+        );
+        return;
+      }
+
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Xác nhận xóa'),
+          content: Text('Bạn có chắc muốn xóa người dùng "${userToDelete.userName}" không?'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Hủy')),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Xóa', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        ),
+      );
+
+      if (confirm != true) return;
+
+      final res = await http.delete(Uri.parse('${Config.baseUrl}/api/admin/users/$id'));
+
+      if (res.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('✅ Đã xóa người dùng thành công!')),
+        );
+        fetchUsers();
+      } else {
+        final body = jsonDecode(res.body);
+        final errorMessage = body['message'] ?? '❌ Xóa thất bại. Vui lòng thử lại.';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMessage)),
+        );
+      }
+    } catch (e) {
+      debugPrint('Lỗi khi xoá user: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('❌ Lỗi xảy ra: $e')),
+      );
+    }
+  }
+
+  Future<void> editUser(User user) async {
+    final nameController = TextEditingController(text: user.userName);
+    final emailController = TextEditingController(text: user.email);
+    String role = user.role;
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Chỉnh sửa người dùng'),
+          content: SingleChildScrollView(
+            child: Column(
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(labelText: 'Tên người dùng'),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: emailController,
+                  decoration: const InputDecoration(labelText: 'Email'),
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  value: role,
+                  items: ['user', 'admin'].map((r) {
+                    return DropdownMenuItem(value: r, child: Text(r));
+                  }).toList(),
+                  onChanged: (value) => role = value!,
+                  decoration: const InputDecoration(labelText: 'Vai trò'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy')),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF9C6B53),
+              ),
+              onPressed: () async {
+                final body = {
+                  'userName': nameController.text.trim(),
+                  'email': emailController.text.trim(),
+                  'role': role,
+                };
+                try {
+                  final res = await http.put(
+                    Uri.parse('${Config.baseUrl}/api/admin/users/${user.id}'),
+                    headers: {'Content-Type': 'application/json'},
+                    body: jsonEncode(body),
+                  );
+
+                  if (res.statusCode == 200) {
+                    Navigator.pop(context, true);
+                  } else {
+                    final err = jsonDecode(res.body);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(err['message'] ?? '❌ Cập nhật thất bại')),
+                    );
+                  }
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('❌ Lỗi khi cập nhật: $e')),
+                  );
+                }
+              },
+              child: const Text('Lưu'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result == true) {
+      try {
+        final res = await http.get(Uri.parse('${Config.baseUrl}/api/admin/users/${user.id}'));
+        if (res.statusCode == 200) {
+          final data = jsonDecode(res.body);
+          final updatedUser = User.fromJson(
+            data is Map && data['data'] != null ? data['data'] : data,
+          );
+
+          if (mounted) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => UserDetailPage(user: updatedUser),
+              ),
+            );
+          }
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('✅ Đã cập nhật người dùng!')),
+          );
+          fetchUsers();
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('❌ Lỗi khi tải user mới: $e')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final filteredUsers = users.where((u) {
-      final matchRole = selectedRole == 'Tất cả' ? true : u['role'] == selectedRole;
-      final matchSearch = u['name'].toString().toLowerCase().contains(searchText.toLowerCase()) ||
-          u['email'].toString().toLowerCase().contains(searchText.toLowerCase());
+      final matchRole = selectedRole == 'Tất cả' || u.role == selectedRole;
+      final matchSearch = u.userName.toLowerCase().contains(searchText.toLowerCase()) ||
+          u.email.toLowerCase().contains(searchText.toLowerCase());
       return matchRole && matchSearch;
     }).toList();
 
     return Scaffold(
+      backgroundColor: const Color(0xFFFFF8F3),
       appBar: AppBar(
-        title: const Text('User List'),
+        title: const Text('Quản lý người dùng'),
+        backgroundColor: const Color(0xFF9C6B53),
+        elevation: 0,
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Thanh tìm kiếm
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: 'Tìm kiếm tên, email...',
-                  prefixIcon: const Icon(Icons.search),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  filled: true,
-                  fillColor: Colors.grey[100],
-                ),
-                onChanged: (value) => setState(() => searchText = value),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: TextField(
+              decoration: InputDecoration(
+                prefixIcon: const Icon(Icons.search),
+                hintText: 'Tìm theo tên hoặc email',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                filled: true,
+                fillColor: Colors.white,
               ),
+              onChanged: (value) => setState(() => searchText = value),
             ),
-            // Filter vai trò
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: roles.map((role) {
-                  final isSelected = selectedRole == role;
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                    child: ChoiceChip(
-                      label: Text(role[0].toUpperCase() + role.substring(1)),
-                      selected: isSelected,
-                      selectedColor: Colors.brown[200],
-                      onSelected: (_) => setState(() => selectedRole = role),
-                      labelStyle: TextStyle(
-                        color: isSelected ? Colors.white : Colors.brown,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      backgroundColor: Colors.brown[50],
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-            // Danh sách user
-            Expanded(
-              child: filteredUsers.isEmpty
-                  ? const Center(child: Text('Không có người dùng nào'))
-                  : ListView.separated(
-                      padding: const EdgeInsets.all(12),
-                      itemCount: filteredUsers.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 10),
-                      itemBuilder: (context, index) {
-                        final user = filteredUsers[index];
-                        return UserCard(
-                          user: user,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => UserDetailPage(user: user),
-                              ),
-                            );
-                          },
-                          onDelete: () {
-                            // Xử lý xóa user
-                          },
-                        );
-                      },
-                    ),
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Xử lý thêm user
-        },
-        child: const Icon(Icons.person_add),
-        backgroundColor: Colors.brown,
-        tooltip: 'Thêm người dùng',
-      ),
-    );
-  }
-}
-
-class UserCard extends StatelessWidget {
-  final Map<String, dynamic> user;
-  final VoidCallback onTap;
-  final VoidCallback onDelete;
-
-  const UserCard({
-    Key? key,
-    required this.user,
-    required this.onTap,
-    required this.onDelete,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    final isAdmin = user['role'] == 'admin';
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 2,
-      child: ListTile(
-        onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-        leading: user['avatar'] != null
-            ? CircleAvatar(
-                backgroundImage: NetworkImage(user['avatar']),
-                radius: 26,
-              )
-            : CircleAvatar(
-                backgroundColor: Colors.brown[100],
-                radius: 26,
-                child: Text(
-                  user['name'][0].toUpperCase(),
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 22, color: Colors.brown),
-                ),
-              ),
-        title: Text(
-          user['name'],
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(user['email'], style: const TextStyle(fontSize: 13)),
-            const SizedBox(height: 2),
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: isAdmin ? Colors.red[200] : Colors.green[200],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    user['role'],
-                    style: TextStyle(
-                      color: isAdmin ? Colors.red[900] : Colors.green[900],
+          ),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: roles.map((role) {
+                final selected = role == selectedRole;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: ChoiceChip(
+                    label: Text(role),
+                    selected: selected,
+                    selectedColor: const Color(0xFF9C6B53),
+                    backgroundColor: const Color(0xFFF2E4DA),
+                    onSelected: (_) => setState(() => selectedRole = role),
+                    labelStyle: TextStyle(
+                      color: selected ? Colors.white : Colors.brown[800],
                       fontWeight: FontWeight.bold,
-                      fontSize: 12,
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    'ID: ${user['id']}',
-                    style: const TextStyle(fontSize: 11, color: Colors.grey),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
+                );
+              }).toList(),
             ),
-          ],
-        ),
-        trailing: IconButton(
-          icon: const Icon(Icons.delete, color: Colors.red, size: 22),
-          onPressed: onDelete,
-          tooltip: 'Xóa',
-        ),
+          ),
+          Expanded(
+            child: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : filteredUsers.isEmpty
+                    ? const Center(child: Text('Không có người dùng nào'))
+                    : ListView.builder(
+                        itemCount: filteredUsers.length,
+                        itemBuilder: (context, index) {
+                          final user = filteredUsers[index];
+                          return Card(
+                            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            color: Colors.white,
+                            elevation: 2,
+                            child: ListTile(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => UserDetailPage(user: user),
+                                  ),
+                                );
+                              },
+                              contentPadding: const EdgeInsets.all(12),
+                              leading: CircleAvatar(
+                                backgroundColor: const Color(0xFF9C6B53),
+                                backgroundImage: user.avatar != null && user.avatar!.isNotEmpty
+                                    ? NetworkImage(user.avatar!)
+                                    : null,
+                                child: user.avatar == null || user.avatar!.isEmpty
+                                    ? Text(user.userName[0].toUpperCase(), style: const TextStyle(color: Colors.white))
+                                    : null,
+                              ),
+                              title: Text(user.userName),
+                              subtitle: Text('${user.email} - ${user.role}'),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.edit, color: Colors.blue),
+                                    onPressed: () => editUser(user),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete, color: Colors.red),
+                                    onPressed: () => deleteUser(user.id),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+          ),
+        ],
       ),
     );
   }

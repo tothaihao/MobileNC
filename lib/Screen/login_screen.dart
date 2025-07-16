@@ -152,7 +152,7 @@ class _LoginForm extends StatelessWidget {
                 text: 'ĐĂNG NHẬP',
                 onPressed: () {
                   // Xử lý đăng nhập ở đây
-                  Navigator.pushNamed(context, '/home');
+                  Navigator.pushNamed(context, '/admin');
                 },
               ),
             ),
