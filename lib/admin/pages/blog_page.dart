@@ -1,76 +1,21 @@
 import 'package:flutter/material.dart';
-import '../../services/admin_blog_service.dart';
 
-class BlogPage extends StatefulWidget {
-  const BlogPage({Key? key}) : super(key: key);
-
-  @override
-  State<BlogPage> createState() => _BlogPageState();
-}
-
-class _BlogPageState extends State<BlogPage> {
-  final AdminBlogService _service = AdminBlogService();
-  List<Map<String, String>> blogs = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchBlogs();
-  }
-
-  Future<void> _fetchBlogs() async {
-    try {
-      final data = await _service.fetchBlogs();
-      setState(() => blogs = List<Map<String, String>>.from(data));
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi tải blog: $e'), backgroundColor: Colors.red),
-      );
-    }
-  }
-
-  Future<void> _addBlog(Map<String, dynamic> blog) async {
-    final success = await _service.addBlog(blog);
-    if (success) {
-      _fetchBlogs();
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Thêm blog thành công!'), backgroundColor: Colors.green),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Thêm blog thất bại!'), backgroundColor: Colors.red),
-      );
-    }
-  }
-
-  Future<void> _updateBlog(String id, Map<String, dynamic> blog) async {
-    final success = await _service.updateBlog(id, blog);
-    if (success) {
-      _fetchBlogs();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Cập nhật blog thành công!'), backgroundColor: Colors.green),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Cập nhật blog thất bại!'), backgroundColor: Colors.red),
-      );
-    }
-  }
-
-  Future<void> _deleteBlog(String id) async {
-    final success = await _service.deleteBlog(id);
-    if (success) {
-      _fetchBlogs();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Xóa blog thành công!'), backgroundColor: Colors.green),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Xóa blog thất bại!'), backgroundColor: Colors.red),
-      );
-    }
-  }
+class BlogPage extends StatelessWidget {
+  final List<Map<String, String>> blogs = [
+    {
+      "title": "Cà Phê Việt Trên Bản Đồ Thế Giới",
+      "date": "26/3/2025",
+      "desc": "Việt Nam là nước xuất khẩu cà phê lớn thứ hai thế giới...",
+      "image": "https://images.unsplash.com/photo-1506744038136-46273834b3fb"
+    },
+    {
+      "title": "Cà Phê và Nghệ Thuật – Khi Mỗi Ly Cà Phê Là Một Tác Phẩm",
+      "date": "26/3/2025",
+      "desc": "Từ những hình vẽ latte art đến cách bày trí ly cà phê...",
+      "image": "https://images.unsplash.com/photo-1511920170033-f8396924c348"
+    },
+    // Thêm các blog khác...
+  ];
 
   @override
   Widget build(BuildContext context) {

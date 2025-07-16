@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'order_detail_page.dart';
-import '../../services/admin_order_service.dart';
 
 class OrderPage extends StatefulWidget {
   const OrderPage({Key? key}) : super(key: key);
@@ -10,8 +9,23 @@ class OrderPage extends StatefulWidget {
 }
 
 class _OrderPageState extends State<OrderPage> {
-  final AdminOrderService _service = AdminOrderService();
-  List<Map<String, dynamic>> orders = [];
+  final List<Map<String, dynamic>> orders = [
+    {
+      'id': '67e7b5e6f2ea9e6eec8b9cde',
+      'date': '2025-03-29',
+      'status': 'pending',
+      'price': 44000,
+      'voucher': 'GIAM20%',
+      'items': [
+        {
+          'title': 'Freeze Trà Xanh',
+          'image': 'https://product.hstatic.net/1000075078/product/1656_freese_traxanh_1_8e2e7e2e2e2e4e2e8e2e.jpg',
+          'quantity': 1
+        }
+      ]
+    },
+    // ... Thêm đơn hàng khác
+  ];
 
   final List<Map<String, String>> statusList = [
     {'key': 'all', 'label': 'Tất cả'},
@@ -32,37 +46,6 @@ class _OrderPageState extends State<OrderPage> {
         return Colors.red;
       default:
         return Colors.grey;
-    }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchOrders();
-  }
-
-  Future<void> _fetchOrders() async {
-    try {
-      final data = await _service.fetchOrders();
-      setState(() => orders = data);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi tải đơn hàng: $e'), backgroundColor: Colors.red),
-      );
-    }
-  }
-
-  Future<void> _updateOrderStatus(String id, String status) async {
-    final success = await _service.updateOrderStatus(id, status);
-    if (success) {
-      _fetchOrders();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Cập nhật trạng thái thành công!'), backgroundColor: Colors.green),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Cập nhật trạng thái thất bại!'), backgroundColor: Colors.red),
-      );
     }
   }
 

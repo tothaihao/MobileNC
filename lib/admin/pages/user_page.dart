@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'user_detail_page.dart';
-import '../../services/admin_user_service.dart';
 
 class UserPage extends StatefulWidget {
   const UserPage({Key? key}) : super(key: key);
@@ -10,44 +9,35 @@ class UserPage extends StatefulWidget {
 }
 
 class _UserPageState extends State<UserPage> {
-  final AdminUserService _service = AdminUserService();
-  List<Map<String, dynamic>> users = [];
+  final List<Map<String, dynamic>> users = [
+    {
+      'id': '671b3a5e6533ab77e8d68b47',
+      'name': 'Su',
+      'email': 'Su@gmail.com',
+      'role': 'admin',
+      'avatar': null,
+    },
+    {
+      'id': '671b3aa46533ab77e8d68b4b',
+      'name': 'Tan',
+      'email': 'nhuttan288204@gmail.com',
+      'role': 'user',
+      'avatar': null,
+    },
+    {
+      'id': '67d520153ab0ac8598a4e4c2',
+      'name': 'Lam',
+      'email': 'Lam@gmail.com',
+      'role': 'user',
+      'avatar': null,
+    },
+    // ... Thêm user khác
+  ];
 
   String searchText = '';
   String selectedRole = 'Tất cả';
 
   final List<String> roles = ['Tất cả', 'admin', 'user'];
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchUsers();
-  }
-
-  Future<void> _fetchUsers() async {
-    try {
-      final data = await _service.fetchUsers();
-      setState(() => users = data);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi tải user: $e'), backgroundColor: Colors.red),
-      );
-    }
-  }
-
-  Future<void> _deleteUser(String id) async {
-    final success = await _service.deleteUser(id);
-    if (success) {
-      _fetchUsers();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Xóa user thành công!'), backgroundColor: Colors.green),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Xóa user thất bại!'), backgroundColor: Colors.red),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -123,7 +113,9 @@ class _UserPageState extends State<UserPage> {
                               ),
                             );
                           },
-                          onDelete: () => _deleteUser(user['id']),
+                          onDelete: () {
+                            // Xử lý xóa user
+                          },
                         );
                       },
                     ),

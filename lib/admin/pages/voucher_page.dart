@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../services/admin_voucher_service.dart';
 
 class VoucherPage extends StatefulWidget {
   const VoucherPage({Key? key}) : super(key: key);
@@ -9,79 +8,41 @@ class VoucherPage extends StatefulWidget {
 }
 
 class _VoucherPageState extends State<VoucherPage> {
-  final AdminVoucherService _service = AdminVoucherService();
-  List<Map<String, dynamic>> vouchers = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchVouchers();
-  }
-
-  Future<void> _fetchVouchers() async {
-    try {
-      final data = await _service.fetchVouchers();
-      setState(() => vouchers = data);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi tải voucher: $e'), backgroundColor: Colors.red),
-      );
-    }
-  }
-
-  Future<void> _addVoucher(Map<String, dynamic> voucher) async {
-    final success = await _service.addVoucher(voucher);
-    if (success) {
-      _fetchVouchers();
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Thêm voucher thành công!'), backgroundColor: Colors.green),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Thêm voucher thất bại!'), backgroundColor: Colors.red),
-      );
-    }
-  }
-
-  Future<void> _updateVoucher(String id, Map<String, dynamic> voucher) async {
-    final success = await _service.updateVoucher(id, voucher);
-    if (success) {
-      _fetchVouchers();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Cập nhật voucher thành công!'), backgroundColor: Colors.green),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Cập nhật voucher thất bại!'), backgroundColor: Colors.red),
-      );
-    }
-  }
-
-  Future<void> _deleteVoucher(String id) async {
-    final success = await _service.deleteVoucher(id);
-    if (success) {
-      _fetchVouchers();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Xóa voucher thành công!'), backgroundColor: Colors.green),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Xóa voucher thất bại!'), backgroundColor: Colors.red),
-      );
-    }
-  }
+  final List<Map<String, dynamic>> vouchers = [
+    {
+      'code': 'GIAM20%',
+      'type': 'percent',
+      'value': 20,
+      'maxValue': 100000,
+      'minOrder': 10000,
+      'expire': '10/4/2025',
+      'active': true,
+    },
+    {
+      'code': 'GIAM10%',
+      'type': 'percent',
+      'value': 10,
+      'maxValue': 100000,
+      'minOrder': 10000,
+      'expire': '4/4/2025',
+      'active': true,
+    },
+    {
+      'code': 'PXSN1941',
+      'type': 'fixed',
+      'value': 100000,
+      'minOrder': 1000,
+      'expire': '4/4/2025',
+      'active': false,
+    },
+  ];
 
   void _showVoucherForm([Map<String, dynamic>? voucher]) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => VoucherForm(
-        voucher: voucher,
-        onSave: (v) => voucher == null ? _addVoucher(v) : _updateVoucher(v['id'], v),
-        onDelete: (v) => _deleteVoucher(v['id']),
-      ),
+      builder: (context) => VoucherForm(voucher: voucher),
     );
   }
 
@@ -122,7 +83,7 @@ class _VoucherPageState extends State<VoucherPage> {
                   voucher: voucher,
                   onEdit: () => _showVoucherForm(voucher),
                   onDelete: () {
-                    _deleteVoucher(voucher['id']);
+                    // Xử lý xóa
                   },
                 )),
           ],
@@ -271,9 +232,7 @@ class ModernVoucherCard extends StatelessWidget {
 
 class VoucherForm extends StatefulWidget {
   final Map<String, dynamic>? voucher;
-  final Function(Map<String, dynamic>) onSave;
-  final Function(Map<String, dynamic>) onDelete;
-  const VoucherForm({Key? key, this.voucher, required this.onSave, required this.onDelete}) : super(key: key);
+  const VoucherForm({Key? key, this.voucher}) : super(key: key);
 
   @override
   State<VoucherForm> createState() => _VoucherFormState();
@@ -426,66 +385,14 @@ class _VoucherFormState extends State<VoucherForm> {
                     ),
                     onPressed: () {
                       if (_formKey.currentState!.validate()) {
-                        final newVoucher = {
-                          'code': codeController.text,
-                          'type': type,
-                          'value': double.tryParse(valueController.text) ?? 0,
-                          'maxValue': type == 'percent' ? (double.tryParse(maxValueController.text) ?? 0) : 0,
-                          'minOrder': double.tryParse(minOrderController.text) ?? 0,
-                          'expire': expireController.text,
-                          'active': active,
-                        };
-                        if (widget.voucher == null) {
-                          widget.onSave(newVoucher);
-                        } else {
-                          widget.onSave(newVoucher);
-                        }
+                        // Xử lý lưu voucher
+                        Navigator.pop(context);
                       }
                     },
                     label: Text(widget.voucher == null ? 'Tạo mới' : 'Cập nhật',
                         style: const TextStyle(fontSize: 16, color: Colors.white)),
                   ),
                 ),
-                const SizedBox(height: 10),
-                if (widget.voucher != null)
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      icon: const Icon(Icons.delete, color: Colors.white),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                          builder: (BuildContext context) {
-                            return AlertDialog(
-                              title: const Text('Xác nhận xóa voucher'),
-                              content: Text('Bạn có chắc chắn muốn xóa voucher "${widget.voucher?['code']}"?'),
-                              actions: <Widget>[
-                                TextButton(
-                                  child: const Text('Hủy'),
-                                  onPressed: () {
-                                    Navigator.of(context).pop();
-                                  },
-                                ),
-                                TextButton(
-                                  child: const Text('Xóa'),
-                                  onPressed: () {
-                                    widget.onDelete(widget.voucher!);
-                                    Navigator.of(context).pop();
-                                  },
-                                ),
-                              ],
-                            );
-                          },
-                        );
-                      },
-                      label: const Text('Xóa voucher', style: TextStyle(fontSize: 16, color: Colors.white)),
-                    ),
-                  ),
               ],
             ),
           ),
