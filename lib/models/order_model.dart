@@ -47,6 +47,7 @@ class Order {
   final DateTime? orderDate;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final String? address;
 
   Order({
     required this.id,
@@ -55,9 +56,10 @@ class Order {
     required this.totalAmount,
     required this.orderStatus,
     this.addressId,
+    this.address,
     this.voucherCode,
-    this.paymentMethod,
-    this.paymentStatus,
+    required this.paymentMethod,
+    required this.paymentStatus,
     this.orderDate,
     this.createdAt,
     this.updatedAt,
@@ -66,15 +68,16 @@ class Order {
   factory Order.fromJson(Map<String, dynamic> json) {
     var itemsList = (json['cartItems'] as List).map((e) => OrderItem.fromJson(e)).toList();
     return Order(
-      id: json['_id'],
-      userId: json['userId'],
+      id: json['_id'] ?? '',
+      userId: json['userId'] ?? '',
       cartItems: itemsList,
-      totalAmount: json['totalAmount'],
-      orderStatus: json['orderStatus'],
+      totalAmount: (json['totalAmount'] as num).toInt(),
+      orderStatus: json['orderStatus'] ?? '',
       addressId: json['addressId'],
+      address: json['address'],
       voucherCode: json['voucherCode'],
-      paymentMethod: json['paymentMethod'],
-      paymentStatus: json['paymentStatus'],
+      paymentMethod: json['paymentMethod'] ?? '',
+      paymentStatus: json['paymentStatus'] ?? '',
       orderDate: json['orderDate'] != null ? DateTime.parse(json['orderDate']) : null,
       createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
       updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
@@ -89,6 +92,7 @@ class Order {
       'totalAmount': totalAmount,
       'orderStatus': orderStatus,
       'addressId': addressId,
+      'address': address,
       'voucherCode': voucherCode,
       'paymentMethod': paymentMethod,
       'paymentStatus': paymentStatus,

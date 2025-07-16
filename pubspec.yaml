@@ -29,4 +29,5 @@ flutter:
   
   assets:
     - assets/images/
+    - assets/data/hcmc-districts.json
     

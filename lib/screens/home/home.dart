@@ -5,7 +5,7 @@ import 'dart:convert';
 import 'package:do_an_mobile_nc/Layout/masterlayout.dart';
 import 'package:do_an_mobile_nc/models/product_model.dart';
 import 'package:do_an_mobile_nc/screens/product/product_detail_screen.dart';
-import 'package:do_an_mobile_nc/config.dart'; // Import config.dart
+import 'package:do_an_mobile_nc/config/app_config.dart'; // Import config.dart
 import 'package:provider/provider.dart';
 import 'package:do_an_mobile_nc/providers/cart_provider.dart';
 import 'package:do_an_mobile_nc/providers/auth_provider.dart';
@@ -38,8 +38,8 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     try {
       // Gọi song song 2 API: 1 cho tất cả sản phẩm, 1 cho ưu đãi hot (discount=true)
-      final allResFuture = http.get(Uri.parse('${Config.baseUrl}/api/shop/products/get'));
-      final hotDealResFuture = http.get(Uri.parse('${Config.baseUrl}/api/shop/products/get?discount=true'));
+      final allResFuture = http.get(Uri.parse('${AppConfig.products}/get'));
+      final hotDealResFuture = http.get(Uri.parse('${AppConfig.products}/get?discount=true'));
       final allRes = await allResFuture;
       final hotDealRes = await hotDealResFuture;
 

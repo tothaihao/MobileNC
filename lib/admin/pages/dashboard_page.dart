@@ -27,9 +27,11 @@ class DashboardPage extends StatelessWidget {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 elevation: 0,
               ),
-              onPressed: () {},
-              icon: const Icon(Icons.logout),
-              label: const Text('LOGOUT'),
+              onPressed: () {
+                Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+              },
+              icon: const Icon(Icons.home),
+              label: const Text('Quay lại mua hàng'),
             ),
           ),
         ],

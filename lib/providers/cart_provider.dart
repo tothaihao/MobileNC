@@ -21,6 +21,8 @@ class CartProvider with ChangeNotifier {
       _cart = await _cartService.fetchCart(userId);
     } catch (e) {
       _error = e.toString();
+      // ignore: avoid_print
+      print('CartProvider.fetchCart error: ${_error}');
     }
     _isLoading = false;
     notifyListeners();
@@ -35,6 +37,8 @@ class CartProvider with ChangeNotifier {
       await fetchCart(userId);
     } catch (e) {
       _error = e.toString();
+      // ignore: avoid_print
+      print('CartProvider.addToCart error: ${_error}');
     }
     _isLoading = false;
     notifyListeners();
@@ -46,9 +50,11 @@ class CartProvider with ChangeNotifier {
     notifyListeners();
     try {
       await _cartService.removeFromCart(userId, productId);
-      await fetchCart(userId);
+      await fetchCart(userId); // Đảm bảo fetch lại giỏ hàng mới nhất
     } catch (e) {
       _error = e.toString();
+      // ignore: avoid_print
+      print('CartProvider.removeFromCart error: ${_error}');
     }
     _isLoading = false;
     notifyListeners();
@@ -63,6 +69,8 @@ class CartProvider with ChangeNotifier {
       await fetchCart(userId);
     } catch (e) {
       _error = e.toString();
+      // ignore: avoid_print
+      print('CartProvider.updateCart error: ${_error}');
     }
     _isLoading = false;
     notifyListeners();

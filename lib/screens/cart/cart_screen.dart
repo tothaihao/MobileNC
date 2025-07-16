@@ -30,13 +30,6 @@ class _CartScreenState extends State<CartScreen> {
     final user = Provider.of<AuthProvider>(context).user;
     final cart = cartProvider.cart;
 
-    // Always reload cart if user logs in and cart is null
-    if (user != null && cart == null && !cartProvider.isLoading) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        context.read<CartProvider>().fetchCart(user.id);
-      });
-    }
-
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -47,45 +40,49 @@ class _CartScreenState extends State<CartScreen> {
       ),
       body: cartProvider.isLoading
           ? const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary)))
-          : cartProvider.error != null
+          : (user == null
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.error_outline, color: AppColors.error, size: 48),
+                      Icon(Icons.person_outline, color: AppColors.textLight, size: 48),
                       const SizedBox(height: 16),
-                      Text(_getFriendlyError(cartProvider.error), style: TextStyle(fontSize: 16, color: AppColors.textSecondary)),
-                      const SizedBox(height: 16),
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: AppColors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                        onPressed: () {
-                          final user = Provider.of<AuthProvider>(context, listen: false).user;
-                          if (user != null) {
-                            context.read<CartProvider>().fetchCart(user.id);
-                          }
-                        },
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('Thử lại'),
-                      ),
+                      const Text('Bạn chưa đăng nhập', style: TextStyle(fontSize: 16, color: AppColors.textSecondary)),
                     ],
                   ),
                 )
-              : user == null
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.person_outline, color: AppColors.textLight, size: 48),
-                          const SizedBox(height: 16),
-                          const Text('Bạn chưa đăng nhập', style: TextStyle(fontSize: 16, color: AppColors.textSecondary)),
-                        ],
-                      ),
-                    )
-                  : cart == null || cart.items.isEmpty
+              : (cartProvider.error != null
+                  ? (() {
+                      // Log lỗi ra console, không hiện lỗi đỏ cho user
+                      // ignore: avoid_print
+                      print('Cart error: \\${cartProvider.error}');
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.remove_shopping_cart, color: AppColors.textLight, size: 48),
+                            const SizedBox(height: 16),
+                            const Text('Giỏ hàng trống', style: TextStyle(fontSize: 16, color: AppColors.textSecondary)),
+                            const SizedBox(height: 16),
+                            ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: AppColors.white,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              ),
+                              onPressed: () {
+                                if (user != null) {
+                                  context.read<CartProvider>().fetchCart(user.id);
+                                }
+                              },
+                              icon: const Icon(Icons.refresh),
+                              label: const Text('Tải lại giỏ hàng'),
+                            ),
+                          ],
+                        ),
+                      );
+                    })()
+                  : (cart == null || cart.items.isEmpty
                       ? Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -125,7 +122,7 @@ class _CartScreenState extends State<CartScreen> {
                             ),
                             _buildTotalSection(cart),
                           ],
-                        ),
+                        ))))
     );
   }
 

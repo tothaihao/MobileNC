@@ -4,6 +4,7 @@ import '../../providers/address_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/address_model.dart';
 import '../../theme/colors.dart';
+import '../../widgets/district_ward_picker.dart';
 
 class AddressScreen extends StatefulWidget {
   const AddressScreen({Key? key}) : super(key: key);
@@ -93,6 +94,8 @@ class _AddressScreenState extends State<AddressScreen> {
     final cityController = TextEditingController(text: address?.city ?? '');
     final phoneController = TextEditingController(text: address?.phone ?? '');
     final notesController = TextEditingController(text: address?.notes ?? '');
+    String? selectedDistrict = districtController.text.isNotEmpty ? districtController.text : null;
+    String? selectedWard = wardController.text.isNotEmpty ? wardController.text : null;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -105,13 +108,15 @@ class _AddressScreenState extends State<AddressScreen> {
                 controller: streetController,
                 decoration: const InputDecoration(labelText: 'Địa chỉ'),
               ),
-              TextField(
-                controller: wardController,
-                decoration: const InputDecoration(labelText: 'Phường/Xã'),
-              ),
-              TextField(
-                controller: districtController,
-                decoration: const InputDecoration(labelText: 'Quận/Huyện'),
+              DistrictWardPicker(
+                initialDistrict: selectedDistrict,
+                initialWard: selectedWard,
+                onChanged: (district, ward) {
+                  selectedDistrict = district;
+                  selectedWard = ward;
+                  districtController.text = district;
+                  wardController.text = ward;
+                },
               ),
               TextField(
                 controller: cityController,

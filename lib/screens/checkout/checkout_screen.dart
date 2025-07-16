@@ -4,9 +4,11 @@ import '../../providers/cart_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../providers/voucher_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/address_provider.dart'; // Added import for AddressProvider
 import '../../models/order_model.dart';
 import '../../models/cart_model.dart';
 import '../../theme/colors.dart';
+import '../../widgets/district_ward_picker.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({Key? key}) : super(key: key);
@@ -22,6 +24,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _noteController = TextEditingController();
   final _voucherController = TextEditingController();
 
+  String? _selectedDistrict;
+  String? _selectedWard;
+  String? _selectedAddressId;
+  String? _selectedPaymentMethod = 'cash';
+
   @override
   void initState() {
     super.initState();
@@ -30,6 +37,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       if (user != null) {
         context.read<CartProvider>().fetchCart(user.id);
         context.read<VoucherProvider>().fetchVouchers();
+        context.read<AddressProvider>().fetchAddresses(user.id); // Fetch addresses for dropdown
       }
     });
   }
@@ -85,31 +93,74 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ],
               ),
               const SizedBox(height: 24),
-              // Delivery Information
+              // Địa chỉ giao hàng
               const Text(
-                'Thông tin giao hàng',
+                'Địa chỉ giao hàng',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
+              Consumer<AddressProvider>(
+                builder: (context, addressProvider, _) {
+                  final addresses = addressProvider.addresses;
+                  return DropdownButtonFormField<String>(
+                    value: _selectedAddressId,
+                    hint: const Text('Chọn địa chỉ đã lưu'),
+                    items: addresses.map((address) => DropdownMenuItem(
+                      value: address.id,
+                      child: Text('${address.streetAddress}, ${address.ward}, ${address.district}, ${address.city}'),
+                    )).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedAddressId = value;
+                        if (value != null) {
+                          final selected = addresses.firstWhere((a) => a.id == value);
+                          _addressController.text = selected.streetAddress;
+                          _selectedDistrict = selected.district;
+                          _selectedWard = selected.ward;
+                          _phoneController.text = selected.phone;
+                        }
+                      });
+                    },
+                    validator: (value) => value == null ? 'Vui lòng chọn địa chỉ giao hàng' : null,
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
+              // Ẩn các trường nhập địa chỉ chi tiết, quận, phường, số điện thoại (chỉ hiển thị, không cho sửa)
               TextFormField(
                 controller: _addressController,
                 decoration: const InputDecoration(
-                  labelText: 'Địa chỉ giao hàng',
+                  labelText: 'Địa chỉ chi tiết',
                   border: OutlineInputBorder(),
                 ),
-                validator: (value) =>
-                    value == null || value.isEmpty ? 'Nhập địa chỉ' : null,
+                enabled: false,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
+              TextFormField(
+                initialValue: _selectedDistrict,
+                decoration: const InputDecoration(
+                  labelText: 'Quận/Huyện',
+                  border: OutlineInputBorder(),
+                ),
+                enabled: false,
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                initialValue: _selectedWard,
+                decoration: const InputDecoration(
+                  labelText: 'Phường/Xã',
+                  border: OutlineInputBorder(),
+                ),
+                enabled: false,
+              ),
+              const SizedBox(height: 8),
               TextFormField(
                 controller: _phoneController,
                 decoration: const InputDecoration(
                   labelText: 'Số điện thoại',
                   border: OutlineInputBorder(),
                 ),
-                keyboardType: TextInputType.phone,
-                validator: (value) =>
-                    value == null || value.isEmpty ? 'Nhập số điện thoại' : null,
+                enabled: false,
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -166,6 +217,22 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ),
               ],
               const SizedBox(height: 24),
+              // Phương thức thanh toán
+              const Text('Phương thức thanh toán', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                value: _selectedPaymentMethod,
+                items: const [
+                  DropdownMenuItem(value: 'cash', child: Text('Thanh toán khi nhận hàng')),
+                  DropdownMenuItem(value: 'momo', child: Text('Momo')),
+                  DropdownMenuItem(value: 'card', child: Text('Thẻ ngân hàng')),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    _selectedPaymentMethod = value;
+                  });
+                },
+              ),
               // Place Order Button
               SizedBox(
                 width: double.infinity,
@@ -221,20 +288,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   void _placeOrder(Cart cart) async {
     if (!_formKey.currentState!.validate()) return;
-
-    final user = context.read<AuthProvider>().user!;
-    // TODO: Lấy addressId thực tế từ user/address provider, hiện tại chỉ demo bằng null
-    final String? addressId = null; // Thay bằng id thực tế nếu có
-    final String paymentMethod = 'cash'; // Hoặc cho user chọn
-    final String? voucherCode = _voucherController.text.isNotEmpty ? _voucherController.text : null;
-
-    if (addressId == null) {
+    if (_selectedAddressId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Vui lòng chọn địa chỉ giao hàng!'), backgroundColor: Colors.red),
       );
       return;
     }
-
+    final user = context.read<AuthProvider>().user!;
+    final String? voucherCode = _voucherController.text.isNotEmpty ? _voucherController.text : null;
     final order = Order(
       id: '',
       userId: user.id,
@@ -247,25 +308,23 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       )).toList(),
       totalAmount: cart.totalPrice,
       orderStatus: 'pending',
-      addressId: addressId,
+      addressId: _selectedAddressId,
+      address: null,
       voucherCode: voucherCode,
-      paymentMethod: paymentMethod,
+      paymentMethod: _selectedPaymentMethod ?? 'cash',
       paymentStatus: 'pending',
     );
-
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => const Center(child: CircularProgressIndicator()),
     );
-
     final success = await context.read<OrderProvider>().createOrder(order);
     Navigator.of(context).pop(); // Close loading
     if (success && mounted) {
-      // Làm mới giỏ hàng
       await context.read<CartProvider>().fetchCart(user.id);
       Navigator.pushReplacementNamed(context, '/success');
-    } else {
+    } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Đặt hàng thất bại!'), backgroundColor: Colors.red),
       );
