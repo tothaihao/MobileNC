@@ -10,7 +10,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-    
   cupertino_icons: ^1.0.8
   carousel_slider: ^5.1.1
   flutter_rating_bar: ^4.0.1
@@ -21,6 +20,7 @@ dependencies:
   diacritic: ^0.1.6
   provider: ^6.1.5
   webview_flutter: ^4.13.0
+  intl: ^0.20.2
 dev_dependencies:
   flutter_test:
     sdk: flutter

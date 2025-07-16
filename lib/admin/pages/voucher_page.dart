@@ -12,10 +12,10 @@ class VoucherPage extends StatefulWidget {
 }
 
 class _VoucherPageState extends State<VoucherPage> {
+  
   List<Voucher> vouchers = [];
   bool isLoading = true;
-
-  // Filter state
+  
   String statusFilter = 'Tất cả';
   String typeFilter = 'Tất cả';
   final List<String> statusOptions = ['Tất cả', 'Hoạt động', 'Hết hạn', 'Tạm dừng'];
@@ -120,68 +120,75 @@ class _VoucherPageState extends State<VoucherPage> {
         title: const Text('Quản lý Voucher'),
       ),
       body: SafeArea(
+        
         child: isLoading
             ? const Center(child: CircularProgressIndicator())
-            : ListView(
+            : Padding(
                 padding: const EdgeInsets.all(16),
-                children: [
-                  Card(
-                    color: Colors.brown[50],
-                    margin: const EdgeInsets.only(bottom: 16),
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Row(
-                        children: const [
-                          Icon(Icons.info, color: Colors.brown),
-                          SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Nhập mã voucher, loại giảm giá, giá trị, điều kiện tối thiểu, hạn sử dụng và trạng thái hoạt động.',
-                              style: TextStyle(fontSize: 13),
+                child: Column(
+                  children: [
+                    Card(
+                      color: Colors.brown[50],
+                      margin: const EdgeInsets.only(bottom: 16),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Row(
+                          children: const [
+                            Icon(Icons.info, color: Colors.brown),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Nhập mã voucher, loại giảm giá, giá trị, điều kiện tối thiểu, hạn sử dụng và trạng thái hoạt động.',
+                                style: TextStyle(fontSize: 13),
+                              ),
                             ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    // Bộ lọc
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: statusFilter,
+                            items: statusOptions.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                            onChanged: (v) => setState(() => statusFilter = v!),
+                            decoration: const InputDecoration(labelText: 'Trạng thái'),
                           ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: typeFilter,
+                            items: typeOptions.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+                            onChanged: (v) => setState(() => typeFilter = v!),
+                            decoration: const InputDecoration(labelText: 'Loại giảm'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('Danh sách Voucher', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      child: ListView(
+                        children: [
+                          ...filteredVouchers.map((voucher) => ModernVoucherCard(
+                                voucher: voucher,
+                                onEdit: () => _showVoucherForm(voucher),
+                                onDelete: () => deleteVoucher(voucher.id),
+                              )),
                         ],
                       ),
                     ),
-                  ),
-                  // Bộ lọc
-                  Row(
-                    children: [
-                      Expanded(
-                        child: DropdownButtonFormField<String>(
-                          value: statusFilter,
-                          items: statusOptions.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-                          onChanged: (v) => setState(() => statusFilter = v!),
-                          decoration: const InputDecoration(labelText: 'Trạng thái'),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: DropdownButtonFormField<String>(
-                          value: typeFilter,
-                          items: typeOptions.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
-                          onChanged: (v) => setState(() => typeFilter = v!),
-                          decoration: const InputDecoration(labelText: 'Loại giảm'),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  const Text('Danh sách Voucher', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                  const SizedBox(height: 8),
-                  ...filteredVouchers.map((voucher) => ModernVoucherCard(
-                        voucher: voucher,
-                        onEdit: () => _showVoucherForm(voucher),
-                        onDelete: () => deleteVoucher(voucher.id),
-                      )),
-                ],
+                  ],
+                ),
               ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showVoucherForm(),
         child: const Icon(Icons.add),
-        backgroundColor: Colors.brown,
-        tooltip: 'Tạo voucher mới',
       ),
     );
   }
@@ -207,64 +214,57 @@ class ModernVoucherCard extends StatelessWidget {
         ? [Colors.green[200]!, Colors.green[50]!]
         : [Colors.grey[300]!, Colors.grey[100]!];
 
-    return Container(
+    return Card(
       margin: const EdgeInsets.symmetric(vertical: 8),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: gradient,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.brown.withOpacity(0.08),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 2,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: gradient,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-        ],
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        leading: CircleAvatar(
-          backgroundColor: isActive ? Colors.green[400] : Colors.grey[400],
-          child: Icon(
-            isPercent ? Icons.percent : Icons.confirmation_number,
-            color: Colors.white,
-          ),
+          borderRadius: BorderRadius.circular(12),
         ),
-        title: Row(
-          children: [
-            Text(
-              voucher.code,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: isActive ? Colors.green[100] : Colors.red[100],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                isActive ? 'Hoạt động' : (voucher.expiredAt != null && voucher.expiredAt!.isBefore(DateTime.now()) ? 'Hết hạn' : 'Tạm dừng'),
-                style: TextStyle(
-                  color: isActive ? Colors.green[900] : Colors.red[900],
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                ),
-              ),
-            ),
-          ],
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 6),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Row(
+                children: [
+                  Text(
+                    voucher.code,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: isActive ? Colors.green[100] : Colors.red[100],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      isActive
+                          ? 'Hoạt động'
+                          : (voucher.expiredAt != null && voucher.expiredAt!.isBefore(DateTime.now())
+                              ? 'Hết hạn'
+                              : 'Tạm dừng'),
+                      style: TextStyle(
+                        color: isActive ? Colors.green[900] : Colors.red[900],
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
                 runSpacing: 4,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   _infoChip(
                     isPercent
@@ -277,23 +277,22 @@ class ModernVoucherCard extends StatelessWidget {
                   _infoChip('Hạn: ${voucher.expiredAt != null ? _formatDate(voucher.expiredAt!) : ''}'),
                 ],
               ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.edit, color: Colors.blue),
+                    onPressed: onEdit,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    onPressed: onDelete,
+                  ),
+                ],
+              ),
             ],
           ),
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.edit, color: Colors.blue, size: 22),
-              onPressed: onEdit,
-              tooltip: 'Sửa',
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete, color: Colors.red, size: 22),
-              onPressed: onDelete,
-              tooltip: 'Xóa',
-            ),
-          ],
         ),
       ),
     );
@@ -301,18 +300,14 @@ class ModernVoucherCard extends StatelessWidget {
 
   Widget _infoChip(String text, {Color? color, Color? textColor}) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: color ?? Colors.grey[200],
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         text,
-        style: TextStyle(
-          color: textColor ?? Colors.brown,
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-        ),
+        style: TextStyle(fontSize: 12, color: textColor ?? Colors.black87),
       ),
     );
   }
@@ -426,134 +421,160 @@ class _VoucherFormState extends State<VoucherForm> {
 
   @override
   Widget build(BuildContext context) {
+    final isEdit = widget.voucher != null;
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: 16, right: 16,
-          top: 24,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-        ),
-        child: SingleChildScrollView(
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 40, height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 24,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+      ),
+      child: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Column(
                   children: [
-                    Icon(Icons.card_giftcard, color: Colors.brown[300]),
-                    const SizedBox(width: 8),
+                    Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
                     Text(
-                      widget.voucher == null ? 'Tạo mới voucher' : 'Sửa voucher',
-                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      isEdit ? 'Cập nhật voucher' : 'Tạo mới voucher',
+                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      isEdit
+                          ? 'Chỉnh sửa thông tin voucher bên dưới.'
+                          : 'Điền đầy đủ thông tin để tạo voucher mới.',
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: codeController,
-                  decoration: const InputDecoration(
-                    labelText: 'Mã voucher',
-                    prefixIcon: Icon(Icons.confirmation_number),
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (value) => value == null || value.isEmpty ? 'Nhập mã voucher' : null,
+              ),
+              const SizedBox(height: 20),
+              TextFormField(
+                controller: codeController,
+                decoration: const InputDecoration(
+                  labelText: 'Mã voucher',
+                  prefixIcon: Icon(Icons.card_giftcard),
+                  border: OutlineInputBorder(),
                 ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  value: type,
-                  items: const [
-                    DropdownMenuItem(value: 'percent', child: Text('Giảm theo %')),
-                    DropdownMenuItem(value: 'fixed', child: Text('Giảm cố định')),
+                validator: (v) => v == null || v.trim().isEmpty ? 'Không được để trống' : null,
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                value: type,
+                items: const [
+                  DropdownMenuItem(value: 'percent', child: Text('Giảm %')),
+                  DropdownMenuItem(value: 'fixed', child: Text('Giảm cố định')),
+                ],
+                onChanged: (v) => setState(() => type = v ?? 'percent'),
+                decoration: const InputDecoration(
+                  labelText: 'Loại giảm',
+                  prefixIcon: Icon(Icons.percent),
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: valueController,
+                      decoration: InputDecoration(
+                        labelText: type == 'percent' ? 'Giá trị (%)' : 'Giá trị (VNĐ)',
+                        prefixIcon: const Icon(Icons.percent),
+                        border: const OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.number,
+                      validator: (v) => v == null || v.trim().isEmpty ? 'Không được để trống' : null,
+                    ),
+                  ),
+                  if (type == 'percent') ...[
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextFormField(
+                        controller: maxDiscountController,
+                        decoration: const InputDecoration(
+                          labelText: 'Giảm tối đa (VNĐ)',
+                          prefixIcon: Icon(Icons.money),
+                          border: OutlineInputBorder(),
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                    ),
                   ],
-                  onChanged: (v) => setState(() => type = v ?? 'percent'),
-                  decoration: const InputDecoration(
-                    labelText: 'Loại giảm giá',
-                    prefixIcon: Icon(Icons.percent),
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: valueController,
-                  decoration: InputDecoration(
-                    labelText: type == 'percent' ? 'Giá trị giảm (%)' : 'Giá trị giảm (VNĐ)',
-                    prefixIcon: Icon(type == 'percent' ? Icons.percent : Icons.money),
-                    border: const OutlineInputBorder(),
-                  ),
-                  keyboardType: TextInputType.number,
-                  validator: (value) => value == null || value.isEmpty ? 'Nhập giá trị giảm' : null,
-                ),
-                const SizedBox(height: 12),
-                if (type == 'percent')
-                  TextFormField(
-                    controller: maxDiscountController,
-                    decoration: const InputDecoration(
-                      labelText: 'Giảm tối đa (VNĐ)',
-                      prefixIcon: Icon(Icons.money),
-                      border: OutlineInputBorder(),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: minOrderAmountController,
+                      decoration: const InputDecoration(
+                        labelText: 'Tối thiểu đơn hàng (VNĐ)',
+                        prefixIcon: Icon(Icons.shopping_cart),
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.number,
                     ),
-                    keyboardType: TextInputType.number,
                   ),
-                if (type == 'percent') const SizedBox(height: 12),
-                TextFormField(
-                  controller: minOrderAmountController,
-                  decoration: const InputDecoration(
-                    labelText: 'Tối thiểu đơn hàng (VNĐ)',
-                    prefixIcon: Icon(Icons.shopping_cart),
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType: TextInputType.number,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: expiredAtController,
-                  decoration: const InputDecoration(
-                    labelText: 'Hạn sử dụng (dd/mm/yyyy)',
-                    prefixIcon: Icon(Icons.calendar_today),
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Checkbox(
-                      value: isActive,
-                      onChanged: (v) => setState(() => isActive = v ?? true),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextFormField(
+                      controller: expiredAtController,
+                      decoration: const InputDecoration(
+                        labelText: 'Hạn sử dụng (dd/mm/yyyy)',
+                        prefixIcon: Icon(Icons.calendar_today),
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.datetime,
                     ),
-                    const Text('Đang hoạt động'),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    icon: const Icon(Icons.save, color: Colors.white),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.brown,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    onPressed: _submit,
-                    label: Text(widget.voucher == null ? 'Tạo mới' : 'Cập nhật',
-                        style: const TextStyle(fontSize: 16, color: Colors.white)),
                   ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Checkbox(
+                    value: isActive,
+                    onChanged: (v) => setState(() => isActive = v ?? true),
+                  ),
+                  const Text('Đang hoạt động'),
+                ],
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.save),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    backgroundColor: Colors.brown,
+                  ),
+                  onPressed: _submit,
+                  label: Text(isEdit ? 'Cập nhật' : 'Tạo mới',
+                      style: const TextStyle(fontSize: 16, color: Colors.white)),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
