@@ -43,7 +43,7 @@ const registerUser = async (req, res) => {
 
 //login
 const loginUser = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, rememberMe } = req.body;
   try {
     const checkUser = await User.findOne({ email });
     console.log({checkUser})
@@ -63,6 +63,9 @@ const loginUser = async (req, res) => {
         message: "Sai password, vui long thu lai",
       });
 
+// Điều chỉnh thời gian token dựa trên rememberMe
+    const tokenExpiry = rememberMe ? '30d' : '24h';
+
     const token = jwt.sign(
       {
         id: checkUser._id,
@@ -72,18 +75,21 @@ const loginUser = async (req, res) => {
         avatar: checkUser?.avatar,
       },
       "CLIENT_SECRET_KEY",
-      { expiresIn: "60m" }
+      { expiresIn: tokenExpiry }
     );
 
     res
       .cookie("token", token, {
         httpOnly: true, // Ngăn chặn truy cập từ JavaScript
         secure: false, // Đặt true nếu bạn sử dụng HTTPS
-        sameSite: "Strict", // Ngăn chặn cookie được gửi trong các yêu cầu cross-site
+        sameSite: "Strict", 
+        maxAge: rememberMe ? 30 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000, // 30 ngày hoặc 24 giờ
+// Ngăn chặn cookie được gửi trong các yêu cầu cross-site
       })
       .json({
         success: true,
         message: "Đăng nhập thành công",
+        token,
         user: {
           email: checkUser.email,
           role: checkUser.role,
