@@ -8,6 +8,11 @@ import 'providers/cart_provider.dart';
 import 'providers/order_provider.dart';
 import 'providers/review_provider.dart';
 import 'providers/voucher_provider.dart';
+import 'providers/address_provider.dart';
+import 'providers/favorites_provider.dart';
+import 'providers/support_request_provider.dart';
+import 'providers/support_chat_provider.dart';
+import 'providers/feature_provider.dart';
 
 // Screens
 import 'screens/auth/login_screen.dart';
@@ -21,6 +26,12 @@ import 'screens/profile/profile_screen.dart';
 import 'screens/order/order_history_screen.dart';
 import 'screens/search/search_screen.dart';
 import 'screens/contact/contact_screen.dart';
+import 'screens/blog/blog_screen.dart';
+import 'screens/profile/address_screen.dart';
+import 'screens/profile/favorites_screen.dart';
+import 'screens/contact/support_request_screen.dart';
+import 'screens/contact/support_chat_screen.dart';
+import 'screens/profile/settings_screen.dart';
 
 // Admin
 import 'admin/pages/dashboard_page.dart';
@@ -70,6 +81,11 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (_) => OrderProvider()),
         ChangeNotifierProvider(create: (_) => ReviewProvider()),
         ChangeNotifierProvider(create: (_) => VoucherProvider()),
+        ChangeNotifierProvider(create: (_) => AddressProvider()),
+        ChangeNotifierProvider(create: (_) => FavoritesProvider()),
+        ChangeNotifierProvider(create: (_) => SupportRequestProvider()),
+        ChangeNotifierProvider(create: (_) => SupportChatProvider()),
+        ChangeNotifierProvider(create: (_) => FeatureProvider()),
       ],
       child: MaterialApp(
         title: 'Coffee Shop App',
@@ -109,7 +125,12 @@ class _MyAppState extends State<MyApp> {
           '/checkout': (context) => const CheckoutScreen(),
           '/success': (context) => const SuccessScreen(),
           '/contact': (context) => const ContactScreen(),
-
+          '/blog': (context) => BlogScreen(),
+          '/address': (context) => const AddressScreen(),
+          '/favorites': (context) => const FavoritesScreen(),
+          '/support-request': (context) => const SupportRequestScreen(),
+          '/support-chat': (context) => const SupportChatScreen(),
+          '/settings': (context) => const SettingsScreen(),
           // ADMIN
           '/admin': (context) => const DashboardPage(),
         },

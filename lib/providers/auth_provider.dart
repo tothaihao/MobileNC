@@ -95,4 +95,40 @@ class AuthProvider with ChangeNotifier {
     _isLoading = false;
     notifyListeners();
   }
+
+  Future<bool> updateUser(String id, String name, String email, String? avatar) async {
+    _isLoading = true;
+    _error = null;
+    _successMessage = null;
+    notifyListeners();
+    final result = await _authService.updateUser(id, name, email, avatar);
+    if (result) {
+      _successMessage = 'Cập nhật thông tin thành công!';
+      // Cập nhật lại user local
+      if (_user != null) {
+        _user = _user!.copyWith(userName: name, email: email, avatar: avatar);
+      }
+    } else {
+      _error = 'Cập nhật thông tin thất bại!';
+    }
+    _isLoading = false;
+    notifyListeners();
+    return result;
+  }
+
+  Future<bool> changePassword(String id, String newPassword) async {
+    _isLoading = true;
+    _error = null;
+    _successMessage = null;
+    notifyListeners();
+    final result = await _authService.changePassword(id, newPassword);
+    if (result) {
+      _successMessage = 'Đổi mật khẩu thành công!';
+    } else {
+      _error = 'Đổi mật khẩu thất bại!';
+    }
+    _isLoading = false;
+    notifyListeners();
+    return result;
+  }
 } 

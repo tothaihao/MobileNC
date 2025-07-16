@@ -32,4 +32,19 @@ class User {
       'role': role,
     };
   }
+
+  User copyWith({
+    String? userName,
+    String? email,
+    String? avatar,
+    String? role,
+  }) {
+    return User(
+      id: id,
+      userName: userName ?? this.userName,
+      email: email ?? this.email,
+      avatar: avatar ?? this.avatar,
+      role: role ?? this.role,
+    );
+  }
 }

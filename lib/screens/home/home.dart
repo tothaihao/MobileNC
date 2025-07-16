@@ -9,6 +9,8 @@ import 'package:do_an_mobile_nc/config.dart'; // Import config.dart
 import 'package:provider/provider.dart';
 import 'package:do_an_mobile_nc/providers/cart_provider.dart';
 import 'package:do_an_mobile_nc/providers/auth_provider.dart';
+import 'package:do_an_mobile_nc/providers/feature_provider.dart';
+import 'package:do_an_mobile_nc/providers/favorites_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -16,12 +18,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final List<String> bannerImages = [
-    'https://upload.wikimedia.org/wikipedia/commons/e/e4/Latte_and_dark_coffee.jpg',
-    'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT0RyiFla98L-B6yXCLbOiELZktX5jHkwQdZw&s',
-    'https://enjoycoffee.vn/wp-content/uploads/2020/01/coffee.2-810x524-1.jpg',
-  ];
-
   List<Product> hotDealProducts = [];
   List<Product> allProducts = [];
   bool isLoading = true;
@@ -30,6 +26,10 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     fetchProducts();
+    // Lấy banner từ provider
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<FeatureProvider>(context, listen: false).fetchBanners();
+    });
   }
 
   Future<void> fetchProducts() async {
@@ -69,16 +69,30 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildBanner() {
+    final featureProvider = Provider.of<FeatureProvider>(context);
+    if (featureProvider.isLoading) {
+      return const SizedBox(
+        height: 180,
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+    final banners = featureProvider.banners;
+    if (banners.isEmpty) {
+      return const SizedBox(
+        height: 180,
+        child: Center(child: Text('Không có banner nào')),
+      );
+    }
     return cs.CarouselSlider(
       options: cs.CarouselOptions(height: 180.0, autoPlay: true),
-      items: bannerImages.map((url) {
+      items: banners.map((banner) {
         return Builder(
           builder: (BuildContext context) {
             return Container(
               width: MediaQuery.of(context).size.width,
-              margin: EdgeInsets.symmetric(horizontal: 5.0),
+              margin: const EdgeInsets.symmetric(horizontal: 5.0),
               decoration: BoxDecoration(color: Colors.amber),
-              child: Image.network(url, fit: BoxFit.cover),
+              child: Image.network(banner.image, fit: BoxFit.cover),
             );
           },
         );
@@ -149,6 +163,8 @@ class _HomeScreenState extends State<HomeScreen> {
     String variant = product.description?.split(' ').firstWhere((word) => ['iced', 'frozen', 'chilled'].contains(word.toLowerCase()), orElse: () => '') ?? '';
     String displayTitle = variant.isNotEmpty ? '$variant ${product.title}' : product.title;
     final isOutOfStock = product.stockStatus == 'outOfStock';
+    final favoritesProvider = Provider.of<FavoritesProvider>(context, listen: false);
+    final isFavorite = favoritesProvider.favoriteProductIds.contains(product.id);
 
     return Card(
       elevation: 4,
@@ -232,13 +248,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   Spacer(),
                   IconButton(
-                    icon: Icon(Icons.favorite_border, color: Colors.grey),
+                    icon: Icon(isFavorite ? Icons.favorite : Icons.favorite_border, color: isFavorite ? Colors.red : Colors.grey),
                     onPressed: isOutOfStock
                         ? null
-                        : () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Đã thêm ${product.title} vào yêu thích!')),
-                            );
+                        : () async {
+                            await favoritesProvider.addFavorite(product.id);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Đã thêm ${product.title} vào yêu thích!')),
+                              );
+                            }
                           },
                     iconSize: 24,
                   ),
@@ -257,9 +276,15 @@ class _HomeScreenState extends State<HomeScreen> {
                               }
                               await cartProvider.addToCart(user.id, product.id, 1);
                               if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Đã thêm ${product.title} vào giỏ hàng!')),
-                                );
+                                if (cartProvider.error != null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Thêm vào giỏ hàng thất bại: ${cartProvider.error}'), backgroundColor: Colors.red),
+                                  );
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Đã thêm ${product.title} vào giỏ hàng!')),
+                                  );
+                                }
                               }
                             },
                       iconSize: 24,

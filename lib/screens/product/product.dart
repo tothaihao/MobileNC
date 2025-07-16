@@ -5,7 +5,12 @@ import 'package:do_an_mobile_nc/Layout/masterlayout.dart';
 import 'package:do_an_mobile_nc/screens/product/product_detail_screen.dart';
 import 'package:do_an_mobile_nc/screens/search/search_screen.dart';
 import 'package:do_an_mobile_nc/models/product_model.dart';
-import 'package:do_an_mobile_nc/config.dart'; // Import config.dart
+import 'package:do_an_mobile_nc/config/app_config.dart'; // Import app_config.dart
+import 'package:do_an_mobile_nc/theme/colors.dart';
+import 'package:do_an_mobile_nc/providers/favorites_provider.dart';
+import 'package:do_an_mobile_nc/providers/cart_provider.dart';
+import 'package:do_an_mobile_nc/providers/auth_provider.dart';
+import 'package:provider/provider.dart';
 
 class ProductListScreen extends StatefulWidget {
   @override
@@ -44,8 +49,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
     try {
       final query = categoryMap[selectedCategory] ?? '';
       final url = query.isNotEmpty
-          ? '${Config.baseUrl}/api/shop/products/get?category=$query'
-          : '${Config.baseUrl}/api/shop/products/get';
+          ? '${AppConfig.products}/get?category=$query'
+          : '${AppConfig.products}/get';
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -70,21 +75,59 @@ class _ProductListScreenState extends State<ProductListScreen> {
   Widget build(BuildContext context) {
     return MasterLayout(
       currentIndex: 1,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: AppColors.backgroundGradient,
+        ),
       child: Column(
         children: [
+            // Header với thiết kế mới
           Container(
-            padding: const EdgeInsets.all(16),
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: AppColors.primaryGradient,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.shadow,
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Sản phẩm',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.white,
+                        ),
+                      ),
+                      Text(
+                        'Khám phá menu tươi ngon',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.white.withOpacity(0.8),
+                        ),
+                      ),
+                    ],
                 ),
                 Row(
                   children: [
-                    IconButton(
-                      icon: Icon(Icons.search, color: Colors.brown),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: IconButton(
+                          icon: Icon(Icons.search, color: AppColors.white),
                       onPressed: () {
                         Navigator.push(
                           context,
@@ -92,56 +135,148 @@ class _ProductListScreenState extends State<ProductListScreen> {
                         );
                       },
                     ),
-                    DropdownButton<String>(
-                      value: selectedCategory,
-                      items: categories.map((cat) {
-                        return DropdownMenuItem<String>(
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: PopupMenuButton<String>(
+                          icon: Icon(Icons.filter_list, color: AppColors.white),
+                          onSelected: (value) {
+                            setState(() {
+                              selectedCategory = value;
+                              isLoading = true;
+                              fetchProducts();
+                            });
+                          },
+                          itemBuilder: (context) => categories.map((cat) {
+                            return PopupMenuItem<String>(
                           value: cat,
-                          child: Text(cat, style: TextStyle(color: Colors.grey)),
+                              child: Text(
+                                cat,
+                                style: TextStyle(
+                                  color: cat == selectedCategory 
+                                      ? AppColors.primary 
+                                      : AppColors.textPrimary,
+                                ),
+                              ),
                         );
                       }).toList(),
-                      onChanged: (value) {
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            // Category chips
+            Container(
+              height: 50,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: categories.length,
+                itemBuilder: (context, index) {
+                  final category = categories[index];
+                  final isSelected = category == selectedCategory;
+                  
+                  return Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    child: FilterChip(
+                      label: Text(
+                        category,
+                        style: TextStyle(
+                          color: isSelected ? AppColors.white : AppColors.textPrimary,
+                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                        ),
+                      ),
+                      selected: isSelected,
+                      onSelected: (selected) {
                         setState(() {
-                          selectedCategory = value!;
+                          selectedCategory = category;
                           isLoading = true;
                           fetchProducts();
                         });
                       },
-                      icon: Icon(Icons.arrow_drop_down, color: Colors.grey),
-                      underline: SizedBox(),
+                      backgroundColor: AppColors.white,
+                      selectedColor: AppColors.primary,
+                      checkmarkColor: AppColors.white,
+                      elevation: isSelected ? 4 : 1,
+                      shadowColor: AppColors.shadow,
                     ),
-                  ],
-                ),
-              ],
+                  );
+                },
+              ),
             ),
-          ),
+            const SizedBox(height: 16),
+            // Products grid
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.all(12.0),
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: isLoading
-                  ? Center(child: CircularProgressIndicator())
-                  : Column(
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Đang tải sản phẩm...',
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : products.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Expanded(
-                          child: GridView.count(
+                                Icon(
+                                  Icons.local_bar_outlined,
+                                  size: 64,
+                                  color: AppColors.textLight,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Không có sản phẩm nào',
+                                  style: TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Hãy thử chọn danh mục khác',
+                                  style: TextStyle(
+                                    color: AppColors.textHint,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : GridView.count(
                             crossAxisCount: 2,
-                            mainAxisSpacing: 12,
-                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 16,
+                            crossAxisSpacing: 16,
                             childAspectRatio: 0.75,
                             children: products.map((product) {
                               return ProductCard(product: product);
                             }).toList(),
                           ),
                         ),
-                        // Padding(
-                        //   padding: const EdgeInsets.only(top: 8.0),
-                        //   child: Text('<1, 2, 3>', style: TextStyle(color: Colors.grey)),
-                        // ),
+            ),
                       ],
                     ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -163,88 +298,220 @@ class ProductCard extends StatelessWidget {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: Colors.brown.shade100),
-          borderRadius: BorderRadius.circular(12),
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.shadow,
+              blurRadius: 8,
+              offset: const Offset(0, 2),
         ),
-        padding: EdgeInsets.all(8),
+          ],
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Image.network(
-              product.image,
-              height: 110,
-              width: double.infinity,
+            // Product image with gradient overlay
+            Flexible(
+              flex: 3,
+              child: Container(
+                height: 110, // Đảm bảo chiều cao cố định cho ảnh
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                  image: DecorationImage(
+                    image: NetworkImage(product.image),
               fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Icon(Icons.error),
+                  ),
+                ),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.3),
+                      ],
+                    ),
+                  ),
+                  child: Stack(
+                    children: [
+                      // Sale badge
+                      if (product.salePrice != null && product.salePrice! > 0)
+                        Positioned(
+                          top: 8,
+                          left: 8,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppColors.accent,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              'GIẢM GIÁ',
+                              style: TextStyle(
+                                color: AppColors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      // Favorite button
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: Consumer<FavoritesProvider>(
+                          builder: (context, favoritesProvider, _) {
+                            final isFavorite = favoritesProvider.favoriteProductIds.contains(product.id);
+                            return Container(
+                              decoration: BoxDecoration(
+                                color: AppColors.white.withOpacity(0.9),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: IconButton(
+                                icon: Icon(
+                                  isFavorite ? Icons.favorite : Icons.favorite_border,
+                                  color: isFavorite ? Colors.red : AppColors.accent,
+                                  size: 20,
+                                ),
+                                padding: EdgeInsets.zero,
+                                constraints: BoxConstraints(),
+                                onPressed: () async {
+                                  await favoritesProvider.addFavorite(product.id);
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Đã thêm ${product.title} vào yêu thích!'),
+                                        backgroundColor: AppColors.success,
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
-            SizedBox(height: 8),
+            // Product info
+            Flexible(
+              flex: 2,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
             Text(
               product.title,
-              style: TextStyle(fontWeight: FontWeight.bold),
-              maxLines: 1,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: AppColors.textPrimary,
+                      ),
+                      maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-            if (product.salePrice != null && product.salePrice! > 0)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                    const SizedBox(height: 4),
+                    // Price
+                    if (product.salePrice != null && product.salePrice! > 0) ...[
                   Text(
                     '${product.salePrice!.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')} đ',
-                    style: TextStyle(color: Colors.green, fontSize: 14),
-                  ),
-                  SizedBox(height: 4),
+                        style: TextStyle(
+                          color: AppColors.accent,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                   Text(
                     '${product.price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')} đ',
                     style: TextStyle(
-                      color: Colors.grey,
+                          color: AppColors.textHint,
                       decoration: TextDecoration.lineThrough,
                       fontSize: 12,
                     ),
                   ),
-                ],
-              )
-            else
+                    ] else
               Text(
                 '${product.price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')} đ',
-                style: TextStyle(color: Colors.green, fontSize: 14),
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
               ),
-            Spacer(),
+                    const Spacer(),
+                    // Rating and add to cart
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
                   children: [
-                    Icon(Icons.star, color: Colors.yellow, size: 16),
+                            Icon(Icons.star, color: AppColors.accent, size: 16),
+                            const SizedBox(width: 4),
                     Text(
                       '${product.averageReview}',
-                      style: TextStyle(fontSize: 12),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                              ),
                     ),
                   ],
                 ),
-                Row(
-                  children: [
-                    IconButton(
-                      icon: Icon(Icons.favorite_border, color: Colors.grey),
-                      onPressed: () {
-                        // Placeholder action: Hiển thị thông báo
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Đã thêm ${product.title} vào yêu thích!')),
-                        );
-                      },
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.add_shopping_cart, color: Colors.brown),
-                      onPressed: () {
-                        // Placeholder action: Hiển thị thông báo
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Đã thêm ${product.title} vào giỏ hàng!')),
-                        );
-                      },
+                        Container(
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Consumer3<CartProvider, AuthProvider, FavoritesProvider>(
+                            builder: (context, cartProvider, authProvider, favoritesProvider, _) {
+                              return IconButton(
+                                icon: Icon(
+                                  Icons.add_shopping_cart,
+                                  color: AppColors.white,
+                                  size: 18,
+                                ),
+                                padding: EdgeInsets.zero,
+                                constraints: BoxConstraints(),
+                                onPressed: () async {
+                                  final user = authProvider.user;
+                                  if (user == null) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('Vui lòng đăng nhập để thêm vào giỏ hàng!')),
+                                    );
+                                    return;
+                                  }
+                                  await cartProvider.addToCart(user.id, product.id, 1);
+                                  if (context.mounted) {
+                                    if (cartProvider.error != null) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Thêm vào giỏ hàng thất bại: \\${cartProvider.error}'), backgroundColor: Colors.red),
+                                      );
+                                    } else {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Đã thêm ${product.title} vào giỏ hàng!'),
+                                          backgroundColor: AppColors.success,
+                                        ),
+                                      );
+                                    }
+                                  }
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
           ],
         ),

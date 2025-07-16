@@ -22,7 +22,7 @@ class MasterLayout extends StatelessWidget {
         Navigator.pushReplacementNamed(context, '/products');
         break;
       case 2:
-        Navigator.pushReplacementNamed(context, '/order-history');
+        Navigator.pushReplacementNamed(context, '/blog');
         break;
       case 3:
         Navigator.pushReplacementNamed(context, '/contact');
@@ -36,31 +36,78 @@ class MasterLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.scaffold, // Thay Colors.brown[50]
+      backgroundColor: AppColors.background, // Sử dụng màu nền thiên nhiên
       body: SafeArea(
         child: Column(
           children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            // Header với gradient đẹp mắt
+            Container(
+              decoration: BoxDecoration(
+                gradient: AppColors.primaryGradient,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.shadow,
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppColors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            Icons.local_cafe,
+                            color: AppColors.white,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
                   Text(
-                    'Coffee shop',
+                          'Fresh Drinks',
                     style: TextStyle(
-                      fontFamily: 'Pacifico', // Custom font nếu có
+                            fontFamily: 'Pacifico',
                       fontSize: 24,
-                      color: AppColors.primary, // Thay Colors.brown[700]
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.white,
+                            shadows: [
+                              Shadow(
+                                color: AppColors.shadowMedium,
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                     ),
                   ),
-                  IconButton(
-                    icon: Icon(Icons.shopping_cart, color: AppColors.primary), // Thay Colors.brown[700]
+                      ],
+                    ),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: IconButton(
+                        icon: Icon(
+                          Icons.shopping_cart,
+                          color: AppColors.white,
+                          size: 24,
+                        ),
                     onPressed: () {
                       Navigator.pushNamed(context, '/cart');
                     },
+                      ),
                   ),
                 ],
+                ),
               ),
             ),
             // Main content
@@ -68,20 +115,76 @@ class MasterLayout extends StatelessWidget {
           ],
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: AppColors.primary, // Thay Color.fromRGBO(156, 107, 83, 1)
-        selectedItemColor: AppColors.white,
-        unselectedItemColor: AppColors.white.withOpacity(0.6),
-        currentIndex: currentIndex,
-        onTap: (index) => _onTabTapped(context, index),
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.local_bar), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.menu_book), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.info), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: ''),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          gradient: AppColors.primaryGradient,
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.shadowMedium,
+              blurRadius: 12,
+              offset: const Offset(0, -4),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildNavItem(0, Icons.home_rounded, 'Trang chủ', context),
+                _buildNavItem(1, Icons.local_bar_rounded, 'Sản phẩm', context),
+                _buildNavItem(2, Icons.article_rounded, 'Blog', context),
+                _buildNavItem(3, Icons.contact_support_rounded, 'Liên hệ', context),
+                _buildNavItem(4, Icons.person_rounded, 'Cá nhân', context),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem(int index, IconData icon, String label, BuildContext context) {
+    final isSelected = index == currentIndex;
+    
+    return GestureDetector(
+      onTap: () => _onTabTapped(context, index),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected 
+              ? AppColors.white.withOpacity(0.2)
+              : AppColors.transparent,
+          borderRadius: BorderRadius.circular(16),
+          border: isSelected
+              ? Border.all(color: AppColors.white.withOpacity(0.3), width: 1)
+              : null,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: isSelected 
+                  ? AppColors.white
+                  : AppColors.white.withOpacity(0.7),
+              size: 24,
+            ),
+            if (isSelected) ...[
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  color: AppColors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
         ],
+          ],
+        ),
       ),
     );
   }

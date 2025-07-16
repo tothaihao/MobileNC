@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../Layout/masterlayout.dart';
+import '../../theme/colors.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -30,18 +31,18 @@ class ProfileScreen extends StatelessWidget {
                   ? NetworkImage(user.avatar!)
                   : null,
               child: user.avatar == null
-                  ? const Icon(Icons.person, size: 50)
+                  ? Icon(Icons.person, size: 50, color: AppColors.primary)
                   : null,
             ),
             const SizedBox(height: 16),
             Text(
               user.userName,
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
             ),
             const SizedBox(height: 8),
             Text(
               user.email,
-              style: const TextStyle(color: Colors.grey),
+              style: TextStyle(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 24),
             // Profile Options
@@ -53,37 +54,27 @@ class ProfileScreen extends StatelessWidget {
             _buildProfileOption(
               icon: Icons.favorite,
               title: 'Sản phẩm yêu thích',
-              onTap: () {
-                // TODO: Implement favorites
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Tính năng đang phát triển')),
-                );
-              },
+              onTap: () => Navigator.pushNamed(context, '/favorites'),
             ),
             _buildProfileOption(
               icon: Icons.location_on,
               title: 'Địa chỉ giao hàng',
-              onTap: () {
-                // TODO: Implement address management
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Tính năng đang phát triển')),
-                );
-              },
+              onTap: () => Navigator.pushNamed(context, '/address'),
             ),
             _buildProfileOption(
               icon: Icons.settings,
               title: 'Cài đặt',
-              onTap: () {
-                // TODO: Implement settings
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Tính năng đang phát triển')),
-                );
-              },
+              onTap: () => Navigator.pushNamed(context, '/settings'),
             ),
             _buildProfileOption(
               icon: Icons.help,
               title: 'Trợ giúp',
-              onTap: () => Navigator.pushNamed(context, '/contact'),
+              onTap: () => Navigator.pushNamed(context, '/support-request'),
+            ),
+            _buildProfileOption(
+              icon: Icons.chat,
+              title: 'Chat với admin',
+              onTap: () => Navigator.pushNamed(context, '/support-chat'),
             ),
             const SizedBox(height: 24),
             // Logout Button
@@ -104,6 +95,24 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ),
             ),
+            // Nếu là admin, thêm nút chuyển sang trang quản lý
+            if (user.role == 'admin') ...[
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/admin');
+                  },
+                  icon: const Icon(Icons.admin_panel_settings),
+                  label: const Text('Quản lý hệ thống'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 24),
             // User Details
             Card(

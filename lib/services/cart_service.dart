@@ -10,7 +10,8 @@ class CartService {
     final response = await http.get(Uri.parse('$baseUrl/$userId'));
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      return Cart.fromJson(data);
+      // Sửa ở đây: lấy data['data'] thay vì data
+      return Cart.fromJson(data['data']);
     } else {
       throw Exception('Failed to load cart');
     }
@@ -30,13 +31,9 @@ class CartService {
   }
 
   Future<bool> removeFromCart(String userId, String productId) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/remove'),
+    final response = await http.delete(
+      Uri.parse('$baseUrl/delete/$userId/$productId'),
       headers: {'Content-Type': 'application/json'},
-      body: json.encode({
-        'userId': userId,
-        'productId': productId,
-      }),
     );
     return response.statusCode == 200;
   }

@@ -4,6 +4,7 @@ import '../../providers/order_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/order_model.dart';
 import '../../Layout/masterlayout.dart';
+import '../../theme/colors.dart';
 
 class OrderHistoryScreen extends StatefulWidget {
   const OrderHistoryScreen({Key? key}) : super(key: key);
@@ -32,25 +33,30 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     return MasterLayout(
       currentIndex: 2, // Order history tab
       child: orderProvider.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary)))
           : orderProvider.error != null
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.error_outline, color: Colors.red, size: 48),
+                      Icon(Icons.error_outline, color: AppColors.error, size: 48),
                       const SizedBox(height: 16),
-                      Text('Lỗi: ${orderProvider.error}', style: TextStyle(fontSize: 16)),
+                      Text('Lỗi: ${orderProvider.error}', style: TextStyle(fontSize: 16, color: AppColors.textSecondary)),
                       const SizedBox(height: 16),
                       ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: AppColors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
                         onPressed: () {
                           final user = Provider.of<AuthProvider>(context, listen: false).user;
                           if (user != null) {
                             context.read<OrderProvider>().fetchOrders(user.id);
                           }
                         },
-                        icon: Icon(Icons.refresh),
-                        label: Text('Thử lại'),
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Thử lại'),
                       ),
                     ],
                   ),
@@ -60,9 +66,9 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.person_outline, color: Colors.grey, size: 48),
+                          Icon(Icons.person_outline, color: AppColors.textLight, size: 48),
                           const SizedBox(height: 16),
-                          const Text('Bạn chưa đăng nhập', style: TextStyle(fontSize: 16)),
+                          const Text('Bạn chưa đăng nhập', style: TextStyle(fontSize: 16, color: AppColors.textSecondary)),
                         ],
                       ),
                     )
@@ -71,9 +77,9 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.receipt_long, color: Colors.grey, size: 48),
+                              Icon(Icons.receipt_long, color: AppColors.textLight, size: 48),
                               const SizedBox(height: 16),
-                              const Text('Chưa có đơn hàng nào', style: TextStyle(fontSize: 16)),
+                              const Text('Chưa có đơn hàng nào', style: TextStyle(fontSize: 16, color: AppColors.textSecondary)),
                             ],
                           ),
                         )
@@ -91,6 +97,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   Widget _buildOrderCard(Order order) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 2,
       child: InkWell(
         onTap: () {
           context.read<OrderProvider>().fetchOrderDetail(order.id);
@@ -106,31 +114,26 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                 children: [
                   Text(
                     'Đơn hàng #${order.id.substring(0, 8)}',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                   ),
                   _buildStatusChip(order.orderStatus),
                 ],
               ),
               const SizedBox(height: 8),
-              Text('Số lượng sản phẩm: ${order.cartItems.length}'),
+              Text('Số lượng sản phẩm: ${order.cartItems.length}', style: TextStyle(color: AppColors.textSecondary)),
               const SizedBox(height: 8),
               Text(
                 'Tổng tiền: ${order.totalAmount.toStringAsFixed(0)} VNĐ',
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: Colors.green,
+                  color: AppColors.primary,
                 ),
               ),
-              // Bỏ phần địa chỉ vì không có trường address trong model Order
-              // if (order.address != null) ...[
-              //   const SizedBox(height: 8),
-              //   Text('Địa chỉ: ${order.address}'),
-              // ],
               if (order.createdAt != null) ...[
                 const SizedBox(height: 8),
                 Text(
                   'Ngày đặt: ${_formatDate(order.createdAt!)}',
-                  style: const TextStyle(color: Colors.grey),
+                  style: TextStyle(color: AppColors.textHint),
                 ),
               ],
             ],
@@ -146,27 +149,27 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
     switch (status.toLowerCase()) {
       case 'pending':
-        color = Colors.orange;
+        color = AppColors.warning;
         text = 'Chờ xử lý';
         break;
       case 'processing':
-        color = Colors.blue;
+        color = AppColors.info;
         text = 'Đang xử lý';
         break;
       case 'shipped':
-        color = Colors.purple;
+        color = AppColors.secondary;
         text = 'Đang giao';
         break;
       case 'delivered':
-        color = Colors.green;
+        color = AppColors.success;
         text = 'Đã giao';
         break;
       case 'cancelled':
-        color = Colors.red;
+        color = AppColors.error;
         text = 'Đã hủy';
         break;
       default:
-        color = Colors.grey;
+        color = AppColors.textHint;
         text = status;
     }
 
@@ -227,17 +230,11 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                         const Text('Tổng cộng:', style: TextStyle(fontWeight: FontWeight.bold)),
                         Text(
                           '${order.totalAmount.toStringAsFixed(0)} VNĐ',
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
+                          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
                         ),
                       ],
                     ),
                     const SizedBox(height: 16),
-                    // Bỏ phần note vì không có trường note trong model Order
-                    // if (order.note != null) ...[
-                    //   const Text('Ghi chú:', style: TextStyle(fontWeight: FontWeight.bold)),
-                    //   Text(order.note!),
-                    //   const SizedBox(height: 16),
-                    // ],
                     _buildStatusChip(order.orderStatus),
                   ],
                 ),
@@ -272,16 +269,16 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
               children: [
                 Text(
                   item.title,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                 ),
-                Text('Số lượng: ${item.quantity}'),
-                Text('${item.price.toStringAsFixed(0)} VNĐ'),
+                Text('Số lượng: ${item.quantity}', style: TextStyle(color: AppColors.textSecondary)),
+                Text('${item.price.toStringAsFixed(0)} VNĐ', style: TextStyle(color: AppColors.textHint)),
               ],
             ),
           ),
           Text(
             '${(item.price * item.quantity).toStringAsFixed(0)} VNĐ',
-            style: const TextStyle(fontWeight: FontWeight.bold),
+            style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
           ),
         ],
       ),

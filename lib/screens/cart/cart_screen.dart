@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/cart_model.dart';
+import '../../theme/colors.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({Key? key}) : super(key: key);
@@ -29,28 +30,46 @@ class _CartScreenState extends State<CartScreen> {
     final user = Provider.of<AuthProvider>(context).user;
     final cart = cartProvider.cart;
 
+    // Always reload cart if user logs in and cart is null
+    if (user != null && cart == null && !cartProvider.isLoading) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.read<CartProvider>().fetchCart(user.id);
+      });
+    }
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Giỏ hàng')),
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: const Text('Giỏ hàng', style: TextStyle(color: AppColors.textPrimary)),
+        backgroundColor: AppColors.white,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: AppColors.primary),
+      ),
       body: cartProvider.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary)))
           : cartProvider.error != null
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.error_outline, color: Colors.red, size: 48),
+                      Icon(Icons.error_outline, color: AppColors.error, size: 48),
                       const SizedBox(height: 16),
-                      Text('Lỗi: ${cartProvider.error}', style: TextStyle(fontSize: 16)),
+                      Text(_getFriendlyError(cartProvider.error), style: TextStyle(fontSize: 16, color: AppColors.textSecondary)),
                       const SizedBox(height: 16),
                       ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: AppColors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
                         onPressed: () {
                           final user = Provider.of<AuthProvider>(context, listen: false).user;
                           if (user != null) {
                             context.read<CartProvider>().fetchCart(user.id);
                           }
                         },
-                        icon: Icon(Icons.refresh),
-                        label: Text('Thử lại'),
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Thử lại'),
                       ),
                     ],
                   ),
@@ -60,9 +79,9 @@ class _CartScreenState extends State<CartScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.person_outline, color: Colors.grey, size: 48),
+                          Icon(Icons.person_outline, color: AppColors.textLight, size: 48),
                           const SizedBox(height: 16),
-                          const Text('Bạn chưa đăng nhập', style: TextStyle(fontSize: 16)),
+                          const Text('Bạn chưa đăng nhập', style: TextStyle(fontSize: 16, color: AppColors.textSecondary)),
                         ],
                       ),
                     )
@@ -71,9 +90,24 @@ class _CartScreenState extends State<CartScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.remove_shopping_cart, color: Colors.grey, size: 48),
+                              Icon(Icons.remove_shopping_cart, color: AppColors.textLight, size: 48),
                               const SizedBox(height: 16),
-                              const Text('Giỏ hàng trống', style: TextStyle(fontSize: 16)),
+                              const Text('Giỏ hàng trống', style: TextStyle(fontSize: 16, color: AppColors.textSecondary)),
+                              const SizedBox(height: 16),
+                              ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  foregroundColor: AppColors.white,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                                onPressed: () {
+                                  if (user != null) {
+                                    context.read<CartProvider>().fetchCart(user.id);
+                                  }
+                                },
+                                icon: const Icon(Icons.refresh),
+                                label: const Text('Tải lại giỏ hàng'),
+                              ),
                             ],
                           ),
                         )
@@ -97,7 +131,10 @@ class _CartScreenState extends State<CartScreen> {
 
   Widget _buildCartItem(CartItem item, String userId) {
     return Card(
+      color: AppColors.white,
       margin: const EdgeInsets.only(bottom: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 2,
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Row(
@@ -122,14 +159,14 @@ class _CartScreenState extends State<CartScreen> {
                 children: [
                   Text(
                     item.title,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '${item.price.toStringAsFixed(0)} VNĐ',
-                    style: const TextStyle(color: Colors.green),
+                    style: TextStyle(color: AppColors.primary),
                   ),
                 ],
               ),
@@ -140,38 +177,53 @@ class _CartScreenState extends State<CartScreen> {
                 Row(
                   children: [
                     IconButton(
-                      onPressed: () {
+                      onPressed: () async {
                         if (item.quantity > 1) {
-                          context.read<CartProvider>().updateCart(
+                          await context.read<CartProvider>().updateCart(
                                 userId,
                                 item.productId,
                                 item.quantity - 1,
                               );
+                          if (context.mounted && context.read<CartProvider>().error == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Cập nhật số lượng thành công'), backgroundColor: AppColors.success),
+                            );
+                          }
                         }
                       },
-                      icon: const Icon(Icons.remove),
+                      icon: Icon(Icons.remove, color: AppColors.primary),
                     ),
-                    Text('${item.quantity}'),
+                    Text('${item.quantity}', style: TextStyle(color: AppColors.textPrimary)),
                     IconButton(
-                      onPressed: () {
-                        context.read<CartProvider>().updateCart(
+                      onPressed: () async {
+                        await context.read<CartProvider>().updateCart(
                               userId,
                               item.productId,
                               item.quantity + 1,
                             );
+                        if (context.mounted && context.read<CartProvider>().error == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Cập nhật số lượng thành công'), backgroundColor: AppColors.success),
+                          );
+                        }
                       },
-                      icon: const Icon(Icons.add),
+                      icon: Icon(Icons.add, color: AppColors.primary),
                     ),
                   ],
                 ),
                 IconButton(
-                  onPressed: () {
-                    context.read<CartProvider>().removeFromCart(
+                  onPressed: () async {
+                    await context.read<CartProvider>().removeFromCart(
                           userId,
                           item.productId,
                         );
+                    if (context.mounted && context.read<CartProvider>().error == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Đã xóa sản phẩm khỏi giỏ hàng'), backgroundColor: AppColors.success),
+                      );
+                    }
                   },
-                  icon: const Icon(Icons.delete, color: Colors.red),
+                  icon: Icon(Icons.delete, color: AppColors.error),
                 ),
               ],
             ),
@@ -185,15 +237,16 @@ class _CartScreenState extends State<CartScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
+            color: AppColors.shadow,
             spreadRadius: 1,
             blurRadius: 5,
             offset: const Offset(0, -2),
           ),
         ],
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
       ),
       child: Column(
         children: [
@@ -202,14 +255,14 @@ class _CartScreenState extends State<CartScreen> {
             children: [
               const Text(
                 'Tổng cộng:',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
               ),
               Text(
                 '${cart.totalPrice.toStringAsFixed(0)} VNĐ',
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Colors.green,
+                  color: AppColors.primary,
                 ),
               ),
             ],
@@ -218,14 +271,32 @@ class _CartScreenState extends State<CartScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.accent,
+                foregroundColor: AppColors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: cart.items.isEmpty
+                  ? null
+                  : () {
                 Navigator.pushNamed(context, '/checkout');
               },
-              child: const Text('Thanh toán'),
+              child: const Text('Thanh toán', style: TextStyle(fontSize: 16)),
             ),
           ),
         ],
       ),
     );
+  }
+
+  String _getFriendlyError(String? error) {
+    if (error == null) return 'Đã xảy ra lỗi không xác định.';
+    if (error.contains('Network')) return 'Không thể kết nối tới máy chủ. Vui lòng kiểm tra mạng.';
+    if (error.contains('500') || error.contains('server')) return 'Lỗi máy chủ. Vui lòng thử lại sau.';
+    if (error.contains('Product not found')) return 'Sản phẩm trong giỏ không còn tồn tại.';
+    if (error.contains('Cart not found')) return 'Giỏ hàng của bạn chưa có sản phẩm nào.';
+    if (error.contains('Invalid data')) return 'Dữ liệu gửi lên không hợp lệ.';
+    return error;
   }
 } 

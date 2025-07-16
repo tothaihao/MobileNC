@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import '../../services/admin_product_service.dart';
 
 class ProductPage extends StatefulWidget {
   const ProductPage({Key? key}) : super(key: key);
@@ -10,39 +11,74 @@ class ProductPage extends StatefulWidget {
 }
 
 class _ProductPageState extends State<ProductPage> {
-  final List<Map<String, dynamic>> products = [
-    {
-      'name': 'Freeze Sô-cô-la',
-      'price': '55.000đ',
-      'quantity': 12,
-      'image': '',
-      'category': 'Đá xay',
-      'bestSeller': true,
-    },
-    {
-      'name': 'Freeze Trà Xanh',
-      'price': '55.000đ',
-      'quantity': 2,
-      'image': 'https://product.hstatic.net/1000075078/product/1656_freese_traxanh_1_8e2e7e2e2e2e4e2e8e2e.jpg',
-      'category': 'Đá xay',
-      'bestSeller': false,
-    },
-    {
-      'name': 'Cà phê sữa thạch Highlands',
-      'price': '49.000đ',
-      'quantity': 10,
-      'image': 'assets/images/highlands_coffee.jpg',
-      'category': 'Cà phê',
-      'bestSeller': false,
-    },
-    // ... Thêm sản phẩm khác
-  ];
+  final AdminProductService _service = AdminProductService();
+  List<Map<String, dynamic>> products = [];
 
   final List<String> categories = [
     'Tất cả', 'Đá xay', 'Trà sữa', 'Cà phê', 'Bánh ngọt', 'Best Seller'
   ];
   String selectedCategory = 'Tất cả';
   String searchText = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchProducts();
+  }
+
+  Future<void> _fetchProducts() async {
+    try {
+      final data = await _service.fetchProducts();
+      setState(() => products = data);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi tải sản phẩm: $e'), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  Future<void> _addProduct(Map<String, dynamic> product) async {
+    final success = await _service.addProduct(product);
+    if (success) {
+      _fetchProducts();
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Thêm sản phẩm thành công!'), backgroundColor: Colors.green),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Thêm sản phẩm thất bại!'), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  Future<void> _updateProduct(String id, Map<String, dynamic> product) async {
+    final success = await _service.updateProduct(id, product);
+    if (success) {
+      _fetchProducts();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Cập nhật sản phẩm thành công!'), backgroundColor: Colors.green),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Cập nhật sản phẩm thất bại!'), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  Future<void> _deleteProduct(String id) async {
+    final success = await _service.deleteProduct(id);
+    if (success) {
+      _fetchProducts();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Xóa sản phẩm thành công!'), backgroundColor: Colors.green),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Xóa sản phẩm thất bại!'), backgroundColor: Colors.red),
+      );
+    }
+  }
 
   // Hàm mở form thêm sản phẩm
   void _showAddProductForm() {
@@ -52,7 +88,7 @@ class _ProductPageState extends State<ProductPage> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (context) => const AddProductForm(),
+      builder: (context) => AddProductForm(onSubmit: _addProduct),
     );
   }
 
@@ -150,8 +186,8 @@ class _ProductPageState extends State<ProductPage> {
                         final product = filteredProducts[index];
                         return ProductCard(
                           product: product,
-                          onEdit: () {},
-                          onDelete: () {},
+                          onEdit: () => _updateProduct(product['id'], product),
+                          onDelete: () => _deleteProduct(product['id']),
                         );
                       },
                     ),
@@ -317,7 +353,8 @@ class ProductCard extends StatelessWidget {
 }
 
 class AddProductForm extends StatefulWidget {
-  const AddProductForm({Key? key}) : super(key: key);
+  final Function(Map<String, dynamic>) onSubmit;
+  const AddProductForm({Key? key, required this.onSubmit}) : super(key: key);
 
   @override
   State<AddProductForm> createState() => _AddProductFormState();
@@ -482,8 +519,17 @@ class _AddProductFormState extends State<AddProductForm> {
                   ),
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
-                      // Xử lý thêm sản phẩm ở đây
-                      Navigator.pop(context);
+                      final product = {
+                        'name': titleController.text,
+                        'description': descController.text,
+                        'price': int.tryParse(priceController.text) ?? 0,
+                        'salePrice': int.tryParse(salePriceController.text) ?? 0,
+                        'quantity': int.tryParse(stockController.text) ?? 0,
+                        'category': _selectedCategory,
+                        'size': _selectedSize,
+                        // 'image': ... // Xử lý upload ảnh nếu cần
+                      };
+                      widget.onSubmit(product);
                     }
                   },
                   child: const Text('Thêm', style: TextStyle(fontSize: 16, color: Colors.white)),

@@ -6,6 +6,7 @@ import '../../providers/voucher_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/order_model.dart';
 import '../../models/cart_model.dart';
+import '../../theme/colors.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({Key? key}) : super(key: key);
@@ -42,15 +43,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     if (user == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Thanh toán')),
-        body: const Center(child: Text('Bạn chưa đăng nhập')),
+        backgroundColor: AppColors.background,
+        appBar: AppBar(title: const Text('Thanh toán', style: TextStyle(color: AppColors.textPrimary)), backgroundColor: AppColors.white, elevation: 0, iconTheme: IconThemeData(color: AppColors.primary)),
+        body: const Center(child: Text('Bạn chưa đăng nhập', style: TextStyle(color: AppColors.textSecondary))),
       );
     }
 
     if (cart == null || cart.items.isEmpty) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Thanh toán')),
-        body: const Center(child: Text('Giỏ hàng trống')),
+        backgroundColor: AppColors.background,
+        appBar: AppBar(title: const Text('Thanh toán', style: TextStyle(color: AppColors.textPrimary)), backgroundColor: AppColors.white, elevation: 0, iconTheme: IconThemeData(color: AppColors.primary)),
+        body: const Center(child: Text('Giỏ hàng trống', style: TextStyle(color: AppColors.textSecondary))),
       );
     }
 
@@ -227,7 +230,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     if (addressId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng chọn địa chỉ giao hàng!')),
+        const SnackBar(content: Text('Vui lòng chọn địa chỉ giao hàng!'), backgroundColor: Colors.red),
       );
       return;
     }
@@ -250,9 +253,22 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       paymentStatus: 'pending',
     );
 
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
     final success = await context.read<OrderProvider>().createOrder(order);
+    Navigator.of(context).pop(); // Close loading
     if (success && mounted) {
+      // Làm mới giỏ hàng
+      await context.read<CartProvider>().fetchCart(user.id);
       Navigator.pushReplacementNamed(context, '/success');
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Đặt hàng thất bại!'), backgroundColor: Colors.red),
+      );
     }
   }
 }

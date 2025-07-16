@@ -7,22 +7,25 @@ class ProductService {
   final String baseUrl = AppConfig.products;
 
   Future<List<Product>> fetchProducts() async {
-    final response = await http.get(Uri.parse(baseUrl));
+    final response = await http.get(Uri.parse('$baseUrl/get'));
+    
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       return (data['data'] as List).map((e) => Product.fromJson(e)).toList();
     } else {
-      throw Exception('Failed to load products');
+      throw Exception('Failed to load products: ${response.statusCode} - ${response.body}');
     }
   }
 
   Future<Product> fetchProductDetail(String id) async {
-    final response = await http.get(Uri.parse('$baseUrl/$id'));
+    final url = '$baseUrl/get/$id';
+    final response = await http.get(Uri.parse(url));
+    
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       return Product.fromJson(data['data']);
     } else {
-      throw Exception('Failed to load product detail');
+      throw Exception('Failed to load product detail: ${response.statusCode} - ${response.body}');
     }
   }
 }

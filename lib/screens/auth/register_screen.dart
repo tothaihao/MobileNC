@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/logo_widget.dart';
+import '../../theme/colors.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({Key? key}) : super(key: key);
@@ -44,7 +45,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final authProvider = Provider.of<AuthProvider>(context);
     final isWide = MediaQuery.of(context).size.width > 700;
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F7),
+      backgroundColor: AppColors.background,
       body: Center(
         child: isWide
             ? Row(
@@ -101,7 +102,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFFB08D6E),
+                  color: AppColors.textPrimary,
                   letterSpacing: 1.1,
                 ),
                 textAlign: TextAlign.center,
@@ -188,7 +189,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   child: Ink(
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xFFB08D6E), Color(0xFFD7C0AE)],
+                        colors: [AppColors.primary, AppColors.accent],
                         begin: Alignment.centerLeft,
                         end: Alignment.centerRight,
                       ),

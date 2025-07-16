@@ -118,4 +118,28 @@ class AuthService {
       return null;
     }
   }
+
+  Future<bool> updateUser(String id, String name, String email, String? avatar) async {
+    final response = await http.put(
+      Uri.parse('${AppConfig.adminUsers}/$id'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'userName': name,
+        'email': email,
+        'avatar': avatar,
+      }),
+    );
+    return response.statusCode == 200;
+  }
+
+  Future<bool> changePassword(String id, String newPassword) async {
+    final response = await http.put(
+      Uri.parse('${AppConfig.adminUsers}/$id'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'password': newPassword,
+      }),
+    );
+    return response.statusCode == 200;
+  }
 } 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/logo_widget.dart';
+import '../../theme/colors.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -17,6 +18,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailFocus = FocusNode();
   final _passwordFocus = FocusNode();
   bool _rememberMe = false;
+  bool _obscurePassword = true;
 
   String? _validateEmail(String? value) {
     if (value == null || value.isEmpty) return 'Nhập email';
@@ -55,7 +57,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final authProvider = Provider.of<AuthProvider>(context);
     final isWide = MediaQuery.of(context).size.width > 700;
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F7),
+      backgroundColor: AppColors.background,
       body: Center(
         child: isWide
             ? Row(
@@ -112,7 +114,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFFB08D6E),
+                  color: AppColors.textPrimary,
                   letterSpacing: 1.1,
                 ),
                 textAlign: TextAlign.center,
@@ -153,11 +155,21 @@ class _LoginScreenState extends State<LoginScreen> {
               TextFormField(
                 controller: _passwordController,
                 focusNode: _passwordFocus,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Password',
                   border: OutlineInputBorder(),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
+                  ),
                 ),
-                obscureText: true,
+                obscureText: _obscurePassword,
                 validator: _validatePassword,
                 onChanged: (_) => authProvider.resetMessages(),
                 onFieldSubmitted: (_) async {
@@ -183,6 +195,18 @@ class _LoginScreenState extends State<LoginScreen> {
                     onChanged: (value) => setState(() => _rememberMe = value!),
                   ),
                   const Text('Ghi nhớ đăng nhập'),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () {
+                      // TODO: Hiển thị dialog hoặc chuyển sang màn hình quên mật khẩu
+                    },
+                    child: Text('Quên mật khẩu?'),
+                  ),
                 ],
               ),
               const SizedBox(height: 24),
@@ -222,7 +246,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Ink(
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xFFB08D6E), Color(0xFFD7C0AE)],
+                        colors: [AppColors.primary, AppColors.accent],
                         begin: Alignment.centerLeft,
                         end: Alignment.centerRight,
                       ),
