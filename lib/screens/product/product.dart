@@ -5,7 +5,7 @@ import 'package:do_an_mobile_nc/Layout/masterlayout.dart';
 import 'package:do_an_mobile_nc/screens/product/product_detail_screen.dart';
 import 'package:do_an_mobile_nc/screens/search/search_screen.dart';
 import 'package:do_an_mobile_nc/models/product_model.dart';
-import 'package:do_an_mobile_nc/config/app_config.dart'; // Import app_config.dart
+import 'package:do_an_mobile_nc/config/app_config.dart';
 import 'package:do_an_mobile_nc/theme/colors.dart';
 import 'package:do_an_mobile_nc/providers/favorites_provider.dart';
 import 'package:do_an_mobile_nc/providers/cart_provider.dart';
@@ -22,7 +22,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
   List<Product> products = [];
   bool isLoading = true;
 
-  // Bản ánh xạ giữa tên hiển thị và giá trị category thực tế
   final Map<String, String> categoryMap = {
     'Tất cả': '',
     'Cà phê': 'caPhe',
@@ -79,10 +78,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
         decoration: BoxDecoration(
           gradient: AppColors.backgroundGradient,
         ),
-      child: Column(
-        children: [
-            // Header với thiết kế mới
-          Container(
+        child: Column(
+          children: [
+            Container(
               margin: const EdgeInsets.all(16),
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -96,14 +94,14 @@ class _ProductListScreenState extends State<ProductListScreen> {
                   ),
                 ],
               ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Sản phẩm',
+                    children: [
+                      Text(
+                        'Sản phẩm',
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -118,9 +116,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
                         ),
                       ),
                     ],
-                ),
-                Row(
-                  children: [
+                  ),
+                  Row(
+                    children: [
                       Container(
                         decoration: BoxDecoration(
                           color: AppColors.white.withOpacity(0.2),
@@ -128,13 +126,13 @@ class _ProductListScreenState extends State<ProductListScreen> {
                         ),
                         child: IconButton(
                           icon: Icon(Icons.search, color: AppColors.white),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => SearchScreen()),
-                        );
-                      },
-                    ),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => SearchScreen()),
+                            );
+                          },
+                        ),
                       ),
                       const SizedBox(width: 8),
                       Container(
@@ -153,17 +151,17 @@ class _ProductListScreenState extends State<ProductListScreen> {
                           },
                           itemBuilder: (context) => categories.map((cat) {
                             return PopupMenuItem<String>(
-                          value: cat,
+                              value: cat,
                               child: Text(
                                 cat,
                                 style: TextStyle(
-                                  color: cat == selectedCategory 
-                                      ? AppColors.primary 
+                                  color: cat == selectedCategory
+                                      ? AppColors.primary
                                       : AppColors.textPrimary,
                                 ),
                               ),
-                        );
-                      }).toList(),
+                            );
+                          }).toList(),
                         ),
                       ),
                     ],
@@ -171,7 +169,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 ],
               ),
             ),
-            // Category chips
             Container(
               height: 50,
               child: ListView.builder(
@@ -181,7 +178,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 itemBuilder: (context, index) {
                   final category = categories[index];
                   final isSelected = category == selectedCategory;
-                  
                   return Container(
                     margin: const EdgeInsets.only(right: 8),
                     child: FilterChip(
@@ -211,11 +207,10 @@ class _ProductListScreenState extends State<ProductListScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            // Products grid
-          Expanded(
-            child: Padding(
+            Expanded(
+              child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: isLoading
+                child: isLoading
                     ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -238,7 +233,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                         ? Center(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
+                              children: [
                                 Icon(
                                   Icons.local_bar_outlined,
                                   size: 64,
@@ -264,19 +259,23 @@ class _ProductListScreenState extends State<ProductListScreen> {
                               ],
                             ),
                           )
-                        : GridView.count(
-                            crossAxisCount: 2,
-                            mainAxisSpacing: 16,
-                            crossAxisSpacing: 16,
-                            childAspectRatio: 0.75,
-                            children: products.map((product) {
-                              return ProductCard(product: product);
-                            }).toList(),
+                        : GridView.builder(
+                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 16,
+                              mainAxisSpacing: 16,
+                              mainAxisExtent: 320,
+                              childAspectRatio: 0.80, // Tỷ lệ chiều rộng/chiều cao
+                            ),
+                            itemCount: products.length,
+                            itemBuilder: (context, index) {
+                              return ProductCard(product: products[index]);
+                            },
                           ),
-                        ),
+              ),
             ),
-                      ],
-                    ),
+          ],
+        ),
       ),
     );
   }
@@ -305,212 +304,205 @@ class ProductCard extends StatelessWidget {
               color: AppColors.shadow,
               blurRadius: 8,
               offset: const Offset(0, 2),
-        ),
+            ),
           ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Product image with gradient overlay
-            Flexible(
-              flex: 3,
+            Container(
+              height: 150, // Chiều cao cố định cho ảnh
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                image: DecorationImage(
+                  image: NetworkImage(product.image),
+                  fit: BoxFit.cover,
+                ),
+              ),
               child: Container(
-                height: 110, // Đảm bảo chiều cao cố định cho ảnh
                 decoration: BoxDecoration(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                  image: DecorationImage(
-                    image: NetworkImage(product.image),
-              fit: BoxFit.cover,
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.3),
+                    ],
                   ),
                 ),
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.transparent,
-                        Colors.black.withOpacity(0.3),
-                      ],
-                    ),
-                  ),
-                  child: Stack(
-                    children: [
-                      // Sale badge
-                      if (product.salePrice != null && product.salePrice! > 0)
-                        Positioned(
-                          top: 8,
-                          left: 8,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: AppColors.accent,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              'GIẢM GIÁ',
-                              style: TextStyle(
-                                color: AppColors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
+                child: Stack(
+                  children: [
+                    // Sale badge
+                    if (product.salePrice != null && product.salePrice! > 0)
+                      Positioned(
+                        top: 8,
+                        left: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.accent,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            'GIẢM GIÁ',
+                            style: TextStyle(
+                              color: AppColors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
-                      // Favorite button
-                      Positioned(
-                        top: 8,
-                        right: 8,
-                        child: Consumer<FavoritesProvider>(
-                          builder: (context, favoritesProvider, _) {
-                            final isFavorite = favoritesProvider.favoriteProductIds.contains(product.id);
-                            return Container(
-                              decoration: BoxDecoration(
-                                color: AppColors.white.withOpacity(0.9),
-                                borderRadius: BorderRadius.circular(20),
+                      ),
+                    // Favorite button
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Consumer<FavoritesProvider>(
+                        builder: (context, favoritesProvider, _) {
+                          final isFavorite = favoritesProvider.favoriteProductIds.contains(product.id);
+                          return Container(
+                            decoration: BoxDecoration(
+                              color: AppColors.white.withOpacity(0.9),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: IconButton(
+                              icon: Icon(
+                                isFavorite ? Icons.favorite : Icons.favorite_border,
+                                color: isFavorite ? Colors.red : AppColors.accent,
+                                size: 20,
                               ),
-                              child: IconButton(
-                                icon: Icon(
-                                  isFavorite ? Icons.favorite : Icons.favorite_border,
-                                  color: isFavorite ? Colors.red : AppColors.accent,
-                                  size: 20,
-                                ),
-                                padding: EdgeInsets.zero,
-                                constraints: BoxConstraints(),
-                                onPressed: () async {
-                                  await favoritesProvider.addFavorite(product.id);
-                                  if (context.mounted) {
+                              padding: EdgeInsets.zero,
+                              constraints: BoxConstraints(),
+                              onPressed: () async {
+                                await favoritesProvider.addFavorite(product.id);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Đã thêm ${product.title} vào yêu thích!'),
+                                      backgroundColor: AppColors.success,
+                                    ),
+                                  );
+                                }
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // Product info
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    product.title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: AppColors.textPrimary,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 8),
+                  // Price
+                  if (product.salePrice != null && product.salePrice! > 0) ...[
+                    Text(
+                      '${product.salePrice!.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')} đ',
+                      style: TextStyle(
+                        color: AppColors.accent,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      '${product.price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')} đ',
+                      style: TextStyle(
+                        color: AppColors.textHint,
+                        decoration: TextDecoration.lineThrough,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ] else
+                    Text(
+                      '${product.price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')} đ',
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  const SizedBox(height: 8),
+                  // Rating and add to cart
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.star, color: AppColors.accent, size: 16),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${product.averageReview}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Consumer3<CartProvider, AuthProvider, FavoritesProvider>(
+                          builder: (context, cartProvider, authProvider, favoritesProvider, _) {
+                            return IconButton(
+                              icon: Icon(
+                                Icons.add_shopping_cart,
+                                color: AppColors.white,
+                                size: 18,
+                              ),
+                              padding: EdgeInsets.zero,
+                              constraints: BoxConstraints(),
+                              onPressed: () async {
+                                final user = authProvider.user;
+                                if (user == null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Vui lòng đăng nhập để thêm vào giỏ hàng!')),
+                                  );
+                                  return;
+                                }
+                                await cartProvider.addToCart(user.id, product.id, 1);
+                                if (context.mounted) {
+                                  if (cartProvider.error != null) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('Thêm vào giỏ hàng thất bại: ${cartProvider.error}'), backgroundColor: Colors.red),
+                                    );
+                                  } else {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
-                                        content: Text('Đã thêm ${product.title} vào yêu thích!'),
+                                        content: Text('Đã thêm ${product.title} vào giỏ hàng!'),
                                         backgroundColor: AppColors.success,
                                       ),
                                     );
                                   }
-                                },
-                              ),
+                                }
+                              },
                             );
                           },
                         ),
                       ),
                     ],
                   ),
-                ),
-              ),
-            ),
-            // Product info
-            Flexible(
-              flex: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-            Text(
-              product.title,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: AppColors.textPrimary,
-                      ),
-                      maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-                    const SizedBox(height: 4),
-                    // Price
-                    if (product.salePrice != null && product.salePrice! > 0) ...[
-                  Text(
-                    '${product.salePrice!.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')} đ',
-                        style: TextStyle(
-                          color: AppColors.accent,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                  Text(
-                    '${product.price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')} đ',
-                    style: TextStyle(
-                          color: AppColors.textHint,
-                      decoration: TextDecoration.lineThrough,
-                      fontSize: 12,
-                    ),
-                  ),
-                    ] else
-              Text(
-                '${product.price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')} đ',
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-              ),
-                    const Spacer(),
-                    // Rating and add to cart
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                            Icon(Icons.star, color: AppColors.accent, size: 16),
-                            const SizedBox(width: 4),
-                    Text(
-                      '${product.averageReview}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: AppColors.textSecondary,
-                              ),
-                    ),
-                  ],
-                ),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: AppColors.primary,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Consumer3<CartProvider, AuthProvider, FavoritesProvider>(
-                            builder: (context, cartProvider, authProvider, favoritesProvider, _) {
-                              return IconButton(
-                                icon: Icon(
-                                  Icons.add_shopping_cart,
-                                  color: AppColors.white,
-                                  size: 18,
-                                ),
-                                padding: EdgeInsets.zero,
-                                constraints: BoxConstraints(),
-                                onPressed: () async {
-                                  final user = authProvider.user;
-                                  if (user == null) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('Vui lòng đăng nhập để thêm vào giỏ hàng!')),
-                                    );
-                                    return;
-                                  }
-                                  await cartProvider.addToCart(user.id, product.id, 1);
-                                  if (context.mounted) {
-                                    if (cartProvider.error != null) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text('Thêm vào giỏ hàng thất bại: \\${cartProvider.error}'), backgroundColor: Colors.red),
-                                      );
-                                    } else {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text('Đã thêm ${product.title} vào giỏ hàng!'),
-                                          backgroundColor: AppColors.success,
-                                        ),
-                                      );
-                                    }
-                                  }
-                                },
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                ],
               ),
             ),
           ],

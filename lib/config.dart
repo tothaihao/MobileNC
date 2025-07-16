@@ -1,3 +1,3 @@
 class Config {
-  static const String baseUrl = 'http://localhost:5000'; // Đặt IP mặc định, có thể thay đổi
+  static const String baseUrl = 'https://mobilenc.onrender.com'; // Đặt IP mặc định, có thể thay đổi
 }
