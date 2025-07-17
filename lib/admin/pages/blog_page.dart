@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:do_an_mobile_nc/models/blog_model.dart';
+import 'package:do_an_mobile_nc/admin/models/blog_model.dart';
 import 'package:do_an_mobile_nc/admin/services/blog_service.dart';
 
 class BlogPage extends StatefulWidget {

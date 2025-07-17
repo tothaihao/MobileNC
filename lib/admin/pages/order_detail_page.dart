@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:do_an_mobile_nc/models/order_model.dart';
-import 'package:do_an_mobile_nc/models/address_model.dart';
+import 'package:do_an_mobile_nc/admin/models/order_model.dart';
+import 'package:do_an_mobile_nc/admin/models/address_model.dart';
 import 'package:do_an_mobile_nc/admin/services/order_service.dart';
 import 'package:do_an_mobile_nc/admin/services/address_service.dart';
 
@@ -28,7 +28,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
       final result = await OrderService.getOrderDetails(widget.orderId);
       print('DEBUG: order = ${result.toJson()}');
       setState(() {
-        order = result;
+        order = result as Order?;
         isLoading = false;
       });
 
@@ -37,7 +37,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
         final addr = await AddressService.getAddressById(order!.addressId);
         print('DEBUG: address response = $addr');
         setState(() {
-          shippingAddress = addr;
+          shippingAddress = addr as Address?;
         });
       }
     } catch (e) {

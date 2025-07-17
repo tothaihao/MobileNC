@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:do_an_mobile_nc/config.dart';
-import 'package:do_an_mobile_nc/models/blog_model.dart';
+import 'package:do_an_mobile_nc/admin/models/blog_model.dart';
 
 class BlogService {
   static Future<List<Blog>> getAllBlogs() async {

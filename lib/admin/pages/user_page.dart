@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:do_an_mobile_nc/config.dart';
-import 'package:do_an_mobile_nc/models/user_model.dart';
+import 'package:do_an_mobile_nc/admin/models/user_model.dart';
 import 'package:do_an_mobile_nc/theme/colors.dart';
 import 'package:do_an_mobile_nc/admin/pages/user_detail_page.dart';
 

@@ -12,6 +12,7 @@ import 'package:do_an_mobile_nc/config.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:do_an_mobile_nc/admin/services/dashboard_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({Key? key}) : super(key: key);
@@ -51,15 +52,22 @@ class _DashboardPageState extends State<DashboardPage> {
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: ElevatedButton.icon(
+              icon: const Icon(Icons.logout),
+              label: const Text('Đăng xuất'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFD7B7A3),
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 elevation: 0,
               ),
-              onPressed: () {},
-              icon: const Icon(Icons.logout),
-              label: const Text('LOGOUT'),
+              onPressed: () async {
+  // Xóa token trong SharedPreferences
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.remove('token');
+  await prefs.remove('user');
+  // Chuyển về trang đăng nhập
+  Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+},
             ),
           ),
         ],
