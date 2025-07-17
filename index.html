@@ -4,9 +4,12 @@
   <title>Chatbot</title>
   <!-- Initialize window.GBAI to avoid undefined errors -->
   <script>
-    window.GBAI = window.GBAI || {};
-    // Optional: Add any configuration provided by GetButton support here
-  </script>
+  window.GBAI = window.GBAI || {};
+  window.GBAI.init = function(config) {
+    console.log("GBAI initialized with config:", config);
+    // Add any required logic here (e.g., API calls or settings)
+  };
+</script>
   <!-- Load the GetButton widget script with defer -->
   <script defer src="https://static.getbutton.io/widget/bundle.js?id=KKOR1"></script>
   <style>
