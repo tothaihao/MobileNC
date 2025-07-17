@@ -4,30 +4,24 @@ import 'package:do_an_mobile_nc/config.dart';
 
 class DashboardService {
   static Future<int> getOrderCount() async {
-    final res = await http.get(Uri.parse('${Config.baseUrl}/api/admin/orders/count'));
+    final res = await http.get(Uri.parse('${Config.baseUrl}/api/admin/orders/total-orders'));
+    print('OrderCount response: ${res.body}');
     if (res.statusCode == 200) {
       final data = jsonDecode(res.body);
-      return data['count'] ?? 0;
+      return data['totalOrders'] ?? 0;
     }
     return 0;
   }
 
-  static Future<int> getUserCount() async {
-    final res = await http.get(Uri.parse('${Config.baseUrl}/api/admin/users/count?role=user'));
+  static Future<Map<String, int>> getUserAndAdminCount() async {
+    final res = await http.get(Uri.parse('${Config.baseUrl}/api/admin/users/'));
     if (res.statusCode == 200) {
-      final data = jsonDecode(res.body);
-      return data['count'] ?? 0;
+      final List users = jsonDecode(res.body);
+      int userCount = users.where((u) => u['role'] == 'user').length;
+      int adminCount = users.where((u) => u['role'] == 'admin').length;
+      return {'user': userCount, 'admin': adminCount};
     }
-    return 0;
-  }
-
-  static Future<int> getAdminCount() async {
-    final res = await http.get(Uri.parse('${Config.baseUrl}/api/admin/users/count?role=admin'));
-    if (res.statusCode == 200) {
-      final data = jsonDecode(res.body);
-      return data['count'] ?? 0;
-    }
-    return 0;
+    return {'user': 0, 'admin': 0};
   }
 
   static Future<int> getTotalRevenue() async {
