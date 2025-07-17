@@ -2,8 +2,23 @@
 <html lang="vi">
 <head>
   <title>Chatbot</title>
-   <script defer src="https://static.getbutton.io/widget/bundle.js?id=KKOR1"></script>
-  <style>html, body { margin:0; padding:0; height:100vh; }</style>
+  <!-- Initialize window.GBAI to avoid undefined errors -->
+  <script>
+    window.GBAI = window.GBAI || {};
+    // Optional: Add any configuration provided by GetButton support here
+  </script>
+  <!-- Load the GetButton widget script with defer -->
+  <script defer src="https://static.getbutton.io/widget/bundle.js?id=KKOR1"></script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+    }
+  </style>
 </head>
-<body></body>
+<body>
+  <!-- Optional: Add a container for the widget if needed -->
+  <div id="getbutton-container"></div>
+</body>
 </html>
