@@ -1,10 +1,8 @@
 class AppConfig {
-  static const String baseUrl = 'https://mobilenc.onrender.com/api';
+  static const String baseUrl = 'http://localhost:5000/api';
 
   // Auth
-static const String login = '$baseUrl/auth/login';
-static const String register = '$baseUrl/auth/register';
-static const String logout = '$baseUrl/auth/logout';
+  static const String auth = '$baseUrl/auth';
   static const String avatar = '$baseUrl/avatar';
 
   // Shop
@@ -21,9 +19,6 @@ static const String logout = '$baseUrl/auth/logout';
   static const String adminUsers = '$baseUrl/admin/users';
   static const String adminBlog = '$baseUrl/admin/blog';
   static const String adminVoucher = '$baseUrl/admin/voucher';
-  static const String adminBanner = '$baseUrl/admin/banner';
-  static const String adminSupportChat = '$baseUrl/admin/support-chat';
-  static const String adminSupportRequest = '$baseUrl/admin/support-request';
 
   // Common
   static const String feature = '$baseUrl/common/feature';

@@ -15,11 +15,11 @@ class OrderItem {
 
   factory OrderItem.fromJson(Map<String, dynamic> json) {
     return OrderItem(
-      productId: json['productId'],
-      title: json['title'],
-      image: json['image'],
-      price: json['price'],
-      quantity: json['quantity'],
+      productId: json['productId']?.toString() ?? '',
+      title: json['title']?.toString() ?? '',
+      image: json['image']?.toString() ?? '',
+      price: (json['price'] is int) ? json['price'] : int.tryParse(json['price']?.toString() ?? '0') ?? 0,
+      quantity: (json['quantity'] is int) ? json['quantity'] : int.tryParse(json['quantity']?.toString() ?? '1') ?? 1,
     );
   }
 
@@ -66,22 +66,43 @@ class Order {
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
-    var itemsList = (json['cartItems'] as List).map((e) => OrderItem.fromJson(e)).toList();
+    List<OrderItem> itemsList = [];
+    if (json['cartItems'] != null) {
+      var cartItemsData = json['cartItems'];
+      if (cartItemsData is List) {
+        itemsList = cartItemsData.map((e) => OrderItem.fromJson(e as Map<String, dynamic>)).toList();
+      }
+    }
+    
     return Order(
-      id: json['_id'] ?? '',
-      userId: json['userId'] ?? '',
+      id: json['_id']?.toString() ?? '',
+      userId: json['userId']?.toString() ?? '',
       cartItems: itemsList,
-      totalAmount: (json['totalAmount'] as num).toInt(),
-      orderStatus: json['orderStatus'] ?? '',
-      addressId: json['addressId'],
-      address: json['address'],
-      voucherCode: json['voucherCode'],
-      paymentMethod: json['paymentMethod'] ?? '',
-      paymentStatus: json['paymentStatus'] ?? '',
-      orderDate: json['orderDate'] != null ? DateTime.parse(json['orderDate']) : null,
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
-      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
+      totalAmount: (json['totalAmount'] is int) ? json['totalAmount'] : int.tryParse(json['totalAmount']?.toString() ?? '0') ?? 0,
+      orderStatus: json['orderStatus']?.toString() ?? '',
+      addressId: json['addressId']?.toString(),
+      address: _parseAddress(json['address']),
+      voucherCode: json['voucherCode']?.toString(),
+      paymentMethod: json['paymentMethod']?.toString() ?? '',
+      paymentStatus: json['paymentStatus']?.toString() ?? '',
+      orderDate: json['orderDate'] != null ? DateTime.tryParse(json['orderDate'].toString()) : null,
+      createdAt: json['createdAt'] != null ? DateTime.tryParse(json['createdAt'].toString()) : null,
+      updatedAt: json['updatedAt'] != null ? DateTime.tryParse(json['updatedAt'].toString()) : null,
     );
+  }
+
+  static String? _parseAddress(dynamic addressData) {
+    if (addressData == null) return null;
+    if (addressData is String) return addressData;
+    if (addressData is Map<String, dynamic>) {
+      // If address is an object, try to construct a string from it
+      String addr = '';
+      if (addressData['street'] != null) addr += addressData['street'].toString();
+      if (addressData['district'] != null) addr += ', ${addressData['district']}';
+      if (addressData['city'] != null) addr += ', ${addressData['city']}';
+      return addr.isNotEmpty ? addr : null;
+    }
+    return addressData.toString();
   }
 
   Map<String, dynamic> toJson() {

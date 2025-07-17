@@ -8,7 +8,7 @@ class MomoService {
     required String orderInfo,
     required String redirectUrl,
   }) async {
-    final url = '${AppConfig.baseUrl}/common/momo-payment'; 
+    final url = '${AppConfig.payment}/momo';
     final response = await http.post(
       Uri.parse(url),
       headers: {'Content-Type': 'application/json'},

@@ -29,8 +29,6 @@ import 'screens/contact/contact_screen.dart';
 import 'screens/blog/blog_screen.dart';
 import 'screens/profile/address_screen.dart';
 import 'screens/profile/favorites_screen.dart';
-import 'screens/contact/support_request_screen.dart';
-import 'screens/contact/support_chat_screen.dart';
 import 'screens/profile/settings_screen.dart';
 
 // Admin
@@ -128,8 +126,6 @@ class _MyAppState extends State<MyApp> {
           '/blog': (context) => BlogScreen(),
           '/address': (context) => const AddressScreen(),
           '/favorites': (context) => const FavoritesScreen(),
-          '/support-request': (context) => const SupportRequestScreen(),
-          '/support-chat': (context) => const SupportChatScreen(),
           '/settings': (context) => const SettingsScreen(),
           // ADMIN
           '/admin': (context) => const DashboardPage(),

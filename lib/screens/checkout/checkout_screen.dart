@@ -4,11 +4,14 @@ import '../../providers/cart_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../providers/voucher_provider.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/address_provider.dart'; // Added import for AddressProvider
+import '../../providers/address_provider.dart';
 import '../../models/order_model.dart';
 import '../../models/cart_model.dart';
 import '../../theme/colors.dart';
 import '../../widgets/district_ward_picker.dart';
+import 'package:intl/intl.dart';
+import '../../services/momo_service.dart';
+import '../../services/paypal_service.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({Key? key}) : super(key: key);
@@ -85,10 +88,34 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Tổng cộng:'),
+                  const Text('Tạm tính:', style: TextStyle(fontSize: 16)),
                   Text(
-                    '${cart.totalPrice.toStringAsFixed(0)} VNĐ',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    _formatCurrency(cart.totalPrice),
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                ],
+              ),
+              if (voucherProvider.appliedVoucher != null) ...[
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Giảm giá:', style: TextStyle(fontSize: 16, color: Colors.green)),
+                    Text(
+                      '-${_formatCurrency(voucherProvider.discountAmount)}',
+                      style: const TextStyle(fontSize: 16, color: Colors.green),
+                    ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Tổng cộng:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text(
+                    _formatCurrency(_calculateFinalTotal(cart, voucherProvider)),
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.red),
                   ),
                 ],
               ),
@@ -191,28 +218,75 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   ),
                   const SizedBox(width: 8),
                   ElevatedButton(
-                    onPressed: () {
+                    onPressed: voucherProvider.isLoading ? null : () async {
                       if (_voucherController.text.isNotEmpty) {
-                        voucherProvider.checkVoucher(_voucherController.text);
+                        voucherProvider.clearMessages();
+                        final success = await voucherProvider.applyVoucher(
+                          _voucherController.text, 
+                          cart.totalPrice
+                        );
+                        if (mounted) {
+                          if (success) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(voucherProvider.successMessage ?? 'Áp dụng mã giảm giá thành công!'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(voucherProvider.error ?? 'Không thể áp dụng mã giảm giá'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
                       }
                     },
-                    child: const Text('Áp dụng'),
+                    child: voucherProvider.isLoading 
+                      ? const SizedBox(
+                          width: 16, height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2)
+                        )
+                      : const Text('Áp dụng'),
                   ),
                 ],
               ),
-              if (voucherProvider.checkedVoucher != null) ...[
+              if (voucherProvider.appliedVoucher != null) ...[
                 const SizedBox(height: 8),
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: Colors.green.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.green),
                   ),
-                  child: Text(
-                    voucherProvider.checkedVoucher!.type == 'percent'
-                      ? 'Giảm ${voucherProvider.checkedVoucher!.value}%'
-                      : 'Giảm ${voucherProvider.checkedVoucher!.value} VNĐ',
-                    style: const TextStyle(color: Colors.green),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Mã: ${voucherProvider.appliedVoucher!.code}',
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              'Giảm: ${voucherProvider.discountAmount.toStringAsFixed(0)} VNĐ',
+                              style: const TextStyle(color: Colors.green),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.red),
+                        onPressed: () {
+                          voucherProvider.clearAppliedVoucher();
+                          _voucherController.clear();
+                        },
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -220,18 +294,39 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               // Phương thức thanh toán
               const Text('Phương thức thanh toán', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                value: _selectedPaymentMethod,
-                items: const [
-                  DropdownMenuItem(value: 'cash', child: Text('Thanh toán khi nhận hàng')),
-                  DropdownMenuItem(value: 'momo', child: Text('Momo')),
-                  DropdownMenuItem(value: 'card', child: Text('Thẻ ngân hàng')),
+              Column(
+                children: [
+                  RadioListTile<String>(
+                    title: const Text('Thanh toán khi nhận hàng'),
+                    value: 'cash',
+                    groupValue: _selectedPaymentMethod,
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedPaymentMethod = value;
+                      });
+                    },
+                  ),
+                  RadioListTile<String>(
+                    title: const Text('Thanh toán MoMo'),
+                    value: 'momo',
+                    groupValue: _selectedPaymentMethod,
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedPaymentMethod = value;
+                      });
+                    },
+                  ),
+                  RadioListTile<String>(
+                    title: const Text('Thanh toán PayPal'),
+                    value: 'paypal',
+                    groupValue: _selectedPaymentMethod,
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedPaymentMethod = value;
+                      });
+                    },
+                  ),
                 ],
-                onChanged: (value) {
-                  setState(() {
-                    _selectedPaymentMethod = value;
-                  });
-                },
               ),
               // Place Order Button
               SizedBox(
@@ -278,12 +373,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
           ),
           Text(
-            '${(item.price * item.quantity).toStringAsFixed(0)} VNĐ',
+            _formatCurrency(item.price * item.quantity),
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
         ],
       ),
     );
+  }
+
+  double _calculateFinalTotal(Cart cart, VoucherProvider voucherProvider) {
+    double total = cart.totalPrice.toDouble();
+    if (voucherProvider.appliedVoucher != null) {
+      total -= voucherProvider.discountAmount;
+    }
+    return total > 0 ? total : 0;
   }
 
   void _placeOrder(Cart cart) async {
@@ -294,8 +397,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       );
       return;
     }
+
     final user = context.read<AuthProvider>().user!;
-    final String? voucherCode = _voucherController.text.isNotEmpty ? _voucherController.text : null;
+    final voucherProvider = context.read<VoucherProvider>();
+    final String? voucherCode = voucherProvider.appliedVoucher?.code;
+    final finalTotal = _calculateFinalTotal(cart, voucherProvider);
+    
     final order = Order(
       id: '',
       userId: user.id,
@@ -306,7 +413,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         price: item.price,
         quantity: item.quantity,
       )).toList(),
-      totalAmount: cart.totalPrice,
+      totalAmount: finalTotal.toInt(),
       orderStatus: 'pending',
       addressId: _selectedAddressId,
       address: null,
@@ -314,20 +421,151 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       paymentMethod: _selectedPaymentMethod ?? 'cash',
       paymentStatus: 'pending',
     );
+
+    // Handle different payment methods
+    if (_selectedPaymentMethod == 'cash') {
+      await _processCashOrder(order, cart, user.id);
+    } else if (_selectedPaymentMethod == 'momo') {
+      await _processMomoPayment(order, cart, user.id, finalTotal);
+    } else if (_selectedPaymentMethod == 'paypal') {
+      await _processPayPalPayment(order, cart, user.id, finalTotal);
+    }
+  }
+
+  Future<void> _processCashOrder(Order order, Cart cart, String userId) async {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => const Center(child: CircularProgressIndicator()),
     );
+
     final success = await context.read<OrderProvider>().createOrder(order);
     Navigator.of(context).pop(); // Close loading
+
     if (success && mounted) {
-      await context.read<CartProvider>().fetchCart(user.id);
+      await context.read<CartProvider>().fetchCart(userId);
       Navigator.pushReplacementNamed(context, '/success');
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Đặt hàng thất bại!'), backgroundColor: Colors.red),
+        const SnackBar(content: Text('Đặt hàng thất bại!'), backgroundColor: Colors.red),
       );
     }
+  }
+
+  Future<void> _processMomoPayment(Order order, Cart cart, String userId, double finalTotal) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final payUrl = await MomoService.createMomoPayment(
+        amount: finalTotal.toInt(),
+        orderInfo: 'Thanh toán đơn hàng #${DateTime.now().millisecondsSinceEpoch}',
+        redirectUrl: 'https://example.com/success',
+      );
+
+      Navigator.of(context).pop(); // Close loading
+
+      if (payUrl != null) {
+        // Create order first
+        final success = await context.read<OrderProvider>().createOrder(order);
+        if (success && mounted) {
+          // TODO: Open MoMo payment URL in webview or external browser
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Chuyển hướng đến MoMo để thanh toán...'),
+              backgroundColor: Colors.blue,
+            ),
+          );
+          // For now, navigate to success since we can't open webview
+          await context.read<CartProvider>().fetchCart(userId);
+          Navigator.pushReplacementNamed(context, '/success');
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Không thể tạo thanh toán MoMo!'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Lỗi thanh toán MoMo: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _processPayPalPayment(Order order, Cart cart, String userId, double finalTotal) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final approvalUrl = await PayPalService.createPayPalPayment(
+        amount: finalTotal,
+        currency: 'USD',
+        description: 'Coffee Shop Order Payment',
+      );
+
+      Navigator.of(context).pop(); // Close loading
+
+      if (approvalUrl != null) {
+        // Create order first
+        final success = await context.read<OrderProvider>().createOrder(order);
+        if (success && mounted) {
+          // TODO: Open PayPal payment URL in webview
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Chuyển hướng đến PayPal để thanh toán...'),
+              backgroundColor: Colors.blue,
+            ),
+          );
+          // For now, navigate to success since we can't open webview
+          await context.read<CartProvider>().fetchCart(userId);
+          Navigator.pushReplacementNamed(context, '/success');
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Không thể tạo thanh toán PayPal!'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Lỗi thanh toán PayPal: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // Helper function to format currency
+  String _formatCurrency(dynamic amount) {
+    if (amount == null) return '0 VNĐ';
+    
+    int value;
+    if (amount is double) {
+      value = amount.round();
+    } else if (amount is int) {
+      value = amount;
+    } else {
+      value = int.tryParse(amount.toString()) ?? 0;
+    }
+    
+    final formatter = NumberFormat('#,###');
+    return '${formatter.format(value)} VNĐ';
   }
 }

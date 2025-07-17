@@ -20,8 +20,11 @@ class OrderProvider with ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
+      print('OrderProvider: Fetching orders for userId: $userId');
       _orders = await _orderService.fetchOrders(userId);
+      print('OrderProvider: Successfully loaded ${_orders.length} orders');
     } catch (e) {
+      print('OrderProvider Error: $e');
       _error = e.toString();
     }
     _isLoading = false;
@@ -47,10 +50,17 @@ class OrderProvider with ChangeNotifier {
     notifyListeners();
     try {
       final result = await _orderService.createOrder(order);
-      await fetchOrders(order.userId);
-      _isLoading = false;
-      notifyListeners();
-      return result;
+      if (result['success'] == true) {
+        await fetchOrders(order.userId);
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        _error = result['message'] ?? 'Failed to create order';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
     } catch (e) {
       _error = e.toString();
       _isLoading = false;

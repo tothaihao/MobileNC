@@ -28,20 +28,31 @@ class CartProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> addToCart(String userId, String productId, int quantity) async {
+  Future<bool> addToCart(String userId, String productId, int quantity) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
     try {
-      await _cartService.addToCart(userId, productId, quantity);
-      await fetchCart(userId);
+      // Note: Stock validation should be handled by backend
+      
+      final success = await _cartService.addToCart(userId, productId, quantity);
+      if (success) {
+        await fetchCart(userId);
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        _error = 'Không thể thêm sản phẩm vào giỏ hàng';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
     } catch (e) {
       _error = e.toString();
-      // ignore: avoid_print
-      print('CartProvider.addToCart error: ${_error}');
+      _isLoading = false;
+      notifyListeners();
+      return false;
     }
-    _isLoading = false;
-    notifyListeners();
   }
 
   Future<void> removeFromCart(String userId, String productId) async {

@@ -30,9 +30,15 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     final orderProvider = Provider.of<OrderProvider>(context);
     final user = Provider.of<AuthProvider>(context).user;
 
-    return MasterLayout(
-      currentIndex: 2, // Order history tab
-      child: orderProvider.isLoading
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: const Text('Lịch sử đơn hàng', style: TextStyle(color: AppColors.textPrimary)),
+        backgroundColor: AppColors.white,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: AppColors.primary),
+      ),
+      body: orderProvider.isLoading
           ? const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary)))
           : orderProvider.error != null
               ? Center(
