@@ -8,9 +8,39 @@ import '../widgets/sidebar.dart';
 import '../widgets/header.dart';
 import '../widgets/statistic_card.dart';
 import '../widgets/sales_chart.dart';
+import 'package:do_an_mobile_nc/config.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:do_an_mobile_nc/admin/services/dashboard_service.dart';
 
-class DashboardPage extends StatelessWidget {
+class DashboardPage extends StatefulWidget {
   const DashboardPage({Key? key}) : super(key: key);
+
+  @override
+  State<DashboardPage> createState() => _DashboardPageState();
+}
+
+class _DashboardPageState extends State<DashboardPage> {
+  int adminCount = 0;
+  int userCount = 0;
+  int orderCount = 0;
+  int totalRevenue = 0;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchDashboardData();
+  }
+
+  Future<void> fetchDashboardData() async {
+    setState(() => isLoading = true);
+    adminCount = await DashboardService.getAdminCount();
+    userCount = await DashboardService.getUserCount();
+    orderCount = await DashboardService.getOrderCount();
+    totalRevenue = await DashboardService.getTotalRevenue();
+    setState(() => isLoading = false);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,11 +57,9 @@ class DashboardPage extends StatelessWidget {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 elevation: 0,
               ),
-              onPressed: () {
-                Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
-              },
-              icon: const Icon(Icons.home),
-              label: const Text('Quay lại mua hàng'),
+              onPressed: () {},
+              icon: const Icon(Icons.logout),
+              label: const Text('LOGOUT'),
             ),
           ),
         ],
@@ -85,44 +113,40 @@ class DashboardPage extends StatelessWidget {
           ],
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: ListView(
-          children: [
-            const SizedBox(height: 8),
-            StatisticCard(
-              title: 'Tổng doanh thu',
-              value: '8,662,219 VND',
-              icon: Icons.attach_money,
-              iconColor: Colors.green,
+      body: isLoading
+        ? const Center(child: CircularProgressIndicator())
+        : Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: ListView(
+              children: [
+                StatisticCard(
+                  title: 'Tổng doanh thu',
+                  value: '$totalRevenue VND',
+                  icon: Icons.attach_money,
+                  iconColor: Colors.green,
+                ),
+                StatisticCard(
+                  title: 'Tổng số đơn hàng',
+                  value: '$orderCount',
+                  icon: Icons.shopping_cart,
+                  iconColor: Colors.blue,
+                ),
+                StatisticCard(
+                  title: 'Số admin',
+                  value: '$adminCount',
+                  icon: Icons.admin_panel_settings,
+                  iconColor: Colors.red,
+                ),
+                StatisticCard(
+                  title: 'Số user',
+                  value: '$userCount',
+                  icon: Icons.person,
+                  iconColor: Colors.purple,
+                ),
+                // ... có thể thêm biểu đồ hoặc các mục khác nếu muốn ...
+              ],
             ),
-            const SizedBox(height: 16),
-            StatisticCard(
-              title: 'Tổng đơn đặt hàng',
-              value: '230',
-              icon: Icons.shopping_cart,
-              iconColor: Colors.blue,
-            ),
-            const SizedBox(height: 16),
-            StatisticCard(
-              title: 'Tổng số Account',
-              value: 'Admin: 1 | User: 4',
-              icon: Icons.person,
-              iconColor: Colors.purple,
-            ),
-            const SizedBox(height: 32),
-            const Text(
-              'Biểu đồ bán hàng (24)',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 250,
-              child: SalesChart(),
-            ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 }

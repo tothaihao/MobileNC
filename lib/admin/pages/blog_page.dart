@@ -1,21 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:do_an_mobile_nc/models/blog_model.dart';
+import 'package:do_an_mobile_nc/admin/services/blog_service.dart';
 
-class BlogPage extends StatelessWidget {
-  final List<Map<String, String>> blogs = [
-    {
-      "title": "Cà Phê Việt Trên Bản Đồ Thế Giới",
-      "date": "26/3/2025",
-      "desc": "Việt Nam là nước xuất khẩu cà phê lớn thứ hai thế giới...",
-      "image": "https://images.unsplash.com/photo-1506744038136-46273834b3fb"
-    },
-    {
-      "title": "Cà Phê và Nghệ Thuật – Khi Mỗi Ly Cà Phê Là Một Tác Phẩm",
-      "date": "26/3/2025",
-      "desc": "Từ những hình vẽ latte art đến cách bày trí ly cà phê...",
-      "image": "https://images.unsplash.com/photo-1511920170033-f8396924c348"
-    },
-    // Thêm các blog khác...
-  ];
+class BlogPage extends StatefulWidget {
+  const BlogPage({Key? key}) : super(key: key);
+
+  @override
+  State<BlogPage> createState() => _BlogPageState();
+}
+
+class _BlogPageState extends State<BlogPage> {
+  List<Blog> blogs = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchBlogs();
+  }
+
+  Future<void> fetchBlogs() async {
+    setState(() { isLoading = true; });
+    try {
+      blogs = await BlogService.getAllBlogs();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi tải blog: $e')),
+      );
+    } finally {
+      setState(() { isLoading = false; });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +56,7 @@ class BlogPage extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: ElevatedButton.icon(
-              onPressed: () {},
+              onPressed: () => _showBlogForm(),
               icon: const Icon(Icons.add),
               label: const Text("Thêm bài viết mới"),
               style: ElevatedButton.styleFrom(
@@ -56,37 +71,39 @@ class BlogPage extends StatelessWidget {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            int crossAxisCount = constraints.maxWidth > 1200
-                ? 4
-                : constraints.maxWidth > 900
-                    ? 3
-                    : constraints.maxWidth > 600
-                        ? 2
-                        : 1;
-            return GridView.builder(
-              itemCount: blogs.length,
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: crossAxisCount,
-                crossAxisSpacing: 24,
-                mainAxisSpacing: 24,
-                childAspectRatio: 0.85,
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  int crossAxisCount = constraints.maxWidth > 1200
+                      ? 4
+                      : constraints.maxWidth > 900
+                          ? 3
+                          : constraints.maxWidth > 600
+                              ? 2
+                              : 1;
+                  return GridView.builder(
+                    itemCount: blogs.length,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      crossAxisSpacing: 24,
+                      mainAxisSpacing: 24,
+                      childAspectRatio: 0.85,
+                    ),
+                    itemBuilder: (context, index) {
+                      final blog = blogs[index];
+                      return _buildBlogCard(blog, context);
+                    },
+                  );
+                },
               ),
-              itemBuilder: (context, index) {
-                final blog = blogs[index];
-                return _buildBlogCard(blog, context);
-              },
-            );
-          },
-        ),
-      ),
+            ),
     );
   }
 
-  Widget _buildBlogCard(Map<String, String> blog, BuildContext context) {
+  Widget _buildBlogCard(Blog blog, BuildContext context) {
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -96,7 +113,7 @@ class BlogPage extends StatelessWidget {
           ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
             child: Image.network(
-              blog["image"] ?? "",
+              blog.image,
               height: 120,
               width: double.infinity,
               fit: BoxFit.cover,
@@ -112,18 +129,19 @@ class BlogPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(blog["title"] ?? "",
+                Text(blog.title,
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 const SizedBox(height: 4),
-                Text(blog["date"] ?? "",
-                    style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                Text(
+                  _formatDate(blog.date),
+                  style: const TextStyle(color: Colors.grey, fontSize: 12)),
                 const SizedBox(height: 8),
-                Text(blog["desc"] ?? "", maxLines: 3, overflow: TextOverflow.ellipsis),
+                Text(blog.content, maxLines: 3, overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 12),
                 Row(
                   children: [
                     ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () => _showBlogForm(blog: blog),
                       child: const Text("Sửa"),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue[600],
@@ -134,7 +152,7 @@ class BlogPage extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () => _deleteBlog(blog),
                       child: const Text("Xoá"),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red[600],
@@ -149,6 +167,186 @@ class BlogPage extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showBlogForm({Blog? blog}) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => BlogForm(
+        blog: blog,
+      ),
+    );
+    if (result == true) fetchBlogs();
+  }
+
+  void _deleteBlog(Blog blog) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Xác nhận xoá'),
+        content: Text('Bạn có chắc chắn muốn xoá blog "${blog.title}"?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Huỷ')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Xoá', style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    final ok = await BlogService.deleteBlog(blog.id);
+    if (ok) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã xoá blog!')));
+      fetchBlogs();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Xoá thất bại!')));
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+  }
+}
+
+class BlogForm extends StatefulWidget {
+  final Blog? blog;
+  const BlogForm({Key? key, this.blog}) : super(key: key);
+
+  @override
+  State<BlogForm> createState() => _BlogFormState();
+}
+
+class _BlogFormState extends State<BlogForm> {
+  final _formKey = GlobalKey<FormState>();
+  late TextEditingController titleController;
+  late TextEditingController contentController;
+  late TextEditingController imageController;
+  late TextEditingController dateController;
+  bool isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    titleController = TextEditingController(text: widget.blog?.title ?? '');
+    contentController = TextEditingController(text: widget.blog?.content ?? '');
+    imageController = TextEditingController(text: widget.blog?.image ?? '');
+    dateController = TextEditingController(text: widget.blog != null ? _formatDate(widget.blog!.date) : '');
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+  }
+
+  DateTime? _parseDate(String input) {
+    try {
+      final parts = input.split('/');
+      if (parts.length == 3) {
+        return DateTime(int.parse(parts[2]), int.parse(parts[1]), int.parse(parts[0]));
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() { isLoading = true; });
+    DateTime? date;
+    if (dateController.text.isNotEmpty) {
+      date = _parseDate(dateController.text);
+      if (date == null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ngày không hợp lệ. Định dạng: dd/mm/yyyy')));
+        setState(() { isLoading = false; });
+        return;
+      }
+    }
+    final blog = Blog(
+      id: widget.blog?.id ?? '',
+      title: titleController.text.trim(),
+      content: contentController.text.trim(),
+      image: imageController.text.trim(),
+      slug: '',
+      date: date ?? DateTime.now(),
+      createdAt: widget.blog?.createdAt ?? DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+    bool ok = false;
+    if (widget.blog == null) {
+      ok = await BlogService.createBlog(blog);
+    } else {
+      ok = await BlogService.updateBlog(widget.blog!.id, blog);
+    }
+    setState(() { isLoading = false; });
+    if (ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(widget.blog == null ? 'Đã tạo blog!' : 'Đã cập nhật blog!')),
+      );
+      Navigator.pop(context, true);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Thao tác thất bại!')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(widget.blog == null ? 'Thêm Blog' : 'Sửa Blog',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: titleController,
+                  decoration: const InputDecoration(labelText: 'Tiêu đề'),
+                  validator: (v) => v == null || v.trim().isEmpty ? 'Không được để trống' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: contentController,
+                  decoration: const InputDecoration(labelText: 'Nội dung'),
+                  minLines: 3,
+                  maxLines: 6,
+                  validator: (v) => v == null || v.trim().isEmpty ? 'Không được để trống' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: imageController,
+                  decoration: const InputDecoration(labelText: 'Link ảnh'),
+                  validator: (v) => v == null || v.trim().isEmpty ? 'Không được để trống' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: dateController,
+                  decoration: const InputDecoration(labelText: 'Ngày đăng (dd/mm/yyyy)'),
+                  validator: (v) => v == null || v.trim().isEmpty ? 'Không được để trống' : null,
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: isLoading ? null : _submit,
+                    child: isLoading
+                        ? const SizedBox(
+                            width: 20, height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : Text(widget.blog == null ? 'Tạo mới' : 'Cập nhật'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

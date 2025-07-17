@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:do_an_mobile_nc/models/voucher_model.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:do_an_mobile_nc/config.dart';
 
 class VoucherPage extends StatefulWidget {
   const VoucherPage({Key? key}) : super(key: key);
@@ -8,99 +12,190 @@ class VoucherPage extends StatefulWidget {
 }
 
 class _VoucherPageState extends State<VoucherPage> {
-  final List<Map<String, dynamic>> vouchers = [
-    {
-      'code': 'GIAM20%',
-      'type': 'percent',
-      'value': 20,
-      'maxValue': 100000,
-      'minOrder': 10000,
-      'expire': '10/4/2025',
-      'active': true,
-    },
-    {
-      'code': 'GIAM10%',
-      'type': 'percent',
-      'value': 10,
-      'maxValue': 100000,
-      'minOrder': 10000,
-      'expire': '4/4/2025',
-      'active': true,
-    },
-    {
-      'code': 'PXSN1941',
-      'type': 'fixed',
-      'value': 100000,
-      'minOrder': 1000,
-      'expire': '4/4/2025',
-      'active': false,
-    },
-  ];
+  
+  List<Voucher> vouchers = [];
+  bool isLoading = true;
+  
+  String statusFilter = 'Tất cả';
+  String typeFilter = 'Tất cả';
+  final List<String> statusOptions = ['Tất cả', 'Hoạt động', 'Hết hạn', 'Tạm dừng'];
+  final List<String> typeOptions = ['Tất cả', 'Giảm %', 'Giảm cố định'];
 
-  void _showVoucherForm([Map<String, dynamic>? voucher]) {
-    showModalBottomSheet(
+  @override
+  void initState() {
+    super.initState();
+    fetchVouchers();
+  }
+
+  Future<void> fetchVouchers() async {
+    setState(() { isLoading = true; });
+    try {
+      final response = await http.get(Uri.parse('${Config.baseUrl}/api/admin/voucher'));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        List<dynamic> voucherList;
+        if (data is List) {
+          voucherList = data;
+        } else if (data['data'] is List) {
+          voucherList = data['data'];
+        } else if (data['vouchers'] is List) {
+          voucherList = data['vouchers'];
+        } else {
+          voucherList = [];
+        }
+        setState(() {
+          vouchers = voucherList.map((e) => Voucher.fromJson(e)).toList();
+          isLoading = false;
+        });
+      } else {
+        throw Exception('Failed to load vouchers, status: ${response.statusCode}');
+      }
+    } catch (e) {
+      setState(() { isLoading = false; });
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+    }
+  }
+
+  Future<void> deleteVoucher(String id) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Xác nhận xóa'),
+        content: const Text('Bạn có chắc chắn muốn xóa voucher này?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Hủy')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Xóa', style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    try {
+      final response = await http.delete(Uri.parse('${Config.baseUrl}/api/admin/voucher/$id'));
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã xóa voucher thành công!')));
+        fetchVouchers();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Xóa thất bại: ${response.body}')));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+    }
+  }
+
+  void _showVoucherForm([Voucher? voucher]) async {
+    final result = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => VoucherForm(voucher: voucher),
     );
+    if (result == true) fetchVouchers();
   }
 
   @override
   Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final filteredVouchers = vouchers.where((v) {
+      // Lọc theo trạng thái
+      bool matchStatus = true;
+      if (statusFilter == 'Hoạt động') {
+        matchStatus = v.isActive && (v.expiredAt == null || v.expiredAt!.isAfter(now));
+      } else if (statusFilter == 'Hết hạn') {
+        matchStatus = v.expiredAt != null && v.expiredAt!.isBefore(now);
+      } else if (statusFilter == 'Tạm dừng') {
+        matchStatus = !v.isActive;
+      }
+      // Lọc theo loại
+      bool matchType = true;
+      if (typeFilter == 'Giảm %') {
+        matchType = v.type == 'percent';
+      } else if (typeFilter == 'Giảm cố định') {
+        matchType = v.type == 'fixed';
+      }
+      return matchStatus && matchType;
+    }).toList();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Quản lý Voucher'),
       ),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            // Hướng dẫn
-            Card(
-              color: Colors.brown[50],
-              margin: const EdgeInsets.only(bottom: 16),
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Row(
-                  children: const [
-                    Icon(Icons.info, color: Colors.brown),
-                    SizedBox(width: 8),
+        
+        child: isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    Card(
+                      color: Colors.brown[50],
+                      margin: const EdgeInsets.only(bottom: 16),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Row(
+                          children: const [
+                            Icon(Icons.info, color: Colors.brown),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Nhập mã voucher, loại giảm giá, giá trị, điều kiện tối thiểu, hạn sử dụng và trạng thái hoạt động.',
+                                style: TextStyle(fontSize: 13),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    // Bộ lọc
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: statusFilter,
+                            items: statusOptions.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                            onChanged: (v) => setState(() => statusFilter = v!),
+                            decoration: const InputDecoration(labelText: 'Trạng thái'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: typeFilter,
+                            items: typeOptions.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+                            onChanged: (v) => setState(() => typeFilter = v!),
+                            decoration: const InputDecoration(labelText: 'Loại giảm'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('Danh sách Voucher', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                    const SizedBox(height: 8),
                     Expanded(
-                      child: Text(
-                        'Nhập mã voucher, loại giảm giá, giá trị, điều kiện tối thiểu, hạn sử dụng và trạng thái hoạt động.',
-                        style: TextStyle(fontSize: 13),
+                      child: ListView(
+                        children: [
+                          ...filteredVouchers.map((voucher) => ModernVoucherCard(
+                                voucher: voucher,
+                                onEdit: () => _showVoucherForm(voucher),
+                                onDelete: () => deleteVoucher(voucher.id),
+                              )),
+                        ],
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
-            // Danh sách voucher
-            const Text('Danh sách Voucher', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-            const SizedBox(height: 8),
-            ...vouchers.map((voucher) => ModernVoucherCard(
-                  voucher: voucher,
-                  onEdit: () => _showVoucherForm(voucher),
-                  onDelete: () {
-                    // Xử lý xóa
-                  },
-                )),
-          ],
-        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showVoucherForm(),
         child: const Icon(Icons.add),
-        backgroundColor: Colors.brown,
-        tooltip: 'Tạo voucher mới',
       ),
     );
   }
 }
 
 class ModernVoucherCard extends StatelessWidget {
-  final Map<String, dynamic> voucher;
+  final Voucher voucher;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
@@ -113,99 +208,91 @@ class ModernVoucherCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isActive = voucher['active'] == true;
-    final isPercent = voucher['type'] == 'percent';
+    final isActive = voucher.isActive && (voucher.expiredAt == null || voucher.expiredAt!.isAfter(DateTime.now()));
+    final isPercent = voucher.type == 'percent';
     final gradient = isActive
         ? [Colors.green[200]!, Colors.green[50]!]
         : [Colors.grey[300]!, Colors.grey[100]!];
 
-    return Container(
+    return Card(
       margin: const EdgeInsets.symmetric(vertical: 8),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: gradient,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.brown.withOpacity(0.08),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 2,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: gradient,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-        ],
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        leading: CircleAvatar(
-          backgroundColor: isActive ? Colors.green[400] : Colors.grey[400],
-          child: Icon(
-            isPercent ? Icons.percent : Icons.confirmation_number,
-            color: Colors.white,
-          ),
+          borderRadius: BorderRadius.circular(12),
         ),
-        title: Row(
-          children: [
-            Text(
-              voucher['code'],
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: isActive ? Colors.green[100] : Colors.red[100],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                isActive ? 'Hoạt động' : 'Tạm dừng',
-                style: TextStyle(
-                  color: isActive ? Colors.green[900] : Colors.red[900],
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                ),
-              ),
-            ),
-          ],
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 6),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Row(
+                children: [
+                  Text(
+                    voucher.code,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: isActive ? Colors.green[100] : Colors.red[100],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      isActive
+                          ? 'Hoạt động'
+                          : (voucher.expiredAt != null && voucher.expiredAt!.isBefore(DateTime.now())
+                              ? 'Hết hạn'
+                              : 'Tạm dừng'),
+                      style: TextStyle(
+                        color: isActive ? Colors.green[900] : Colors.red[900],
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
                 runSpacing: 4,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   _infoChip(
                     isPercent
-                        ? 'Giảm ${voucher['value']}% (max ${voucher['maxValue']}đ)'
-                        : 'Giảm ${voucher['value']}đ',
+                        ? 'Giảm ${voucher.value}% (max ${voucher.maxDiscount}đ)'
+                        : 'Giảm ${voucher.value}đ',
                     color: Colors.orange[100],
                     textColor: Colors.orange[900],
                   ),
-                  _infoChip('Min Order: ${voucher['minOrder']}đ'),
-                  _infoChip('Hạn: ${voucher['expire']}'),
+                  _infoChip('Min Order: ${voucher.minOrderAmount}đ'),
+                  _infoChip('Hạn: ${voucher.expiredAt != null ? _formatDate(voucher.expiredAt!) : ''}'),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.edit, color: Colors.blue),
+                    onPressed: onEdit,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    onPressed: onDelete,
+                  ),
                 ],
               ),
             ],
           ),
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.edit, color: Colors.blue, size: 22),
-              onPressed: onEdit,
-              tooltip: 'Sửa',
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete, color: Colors.red, size: 22),
-              onPressed: onDelete,
-              tooltip: 'Xóa',
-            ),
-          ],
         ),
       ),
     );
@@ -213,25 +300,25 @@ class ModernVoucherCard extends StatelessWidget {
 
   Widget _infoChip(String text, {Color? color, Color? textColor}) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: color ?? Colors.grey[200],
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         text,
-        style: TextStyle(
-          color: textColor ?? Colors.brown,
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-        ),
+        style: TextStyle(fontSize: 12, color: textColor ?? Colors.black87),
       ),
     );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 }
 
 class VoucherForm extends StatefulWidget {
-  final Map<String, dynamic>? voucher;
+  final Voucher? voucher;
   const VoucherForm({Key? key, this.voucher}) : super(key: key);
 
   @override
@@ -242,159 +329,252 @@ class _VoucherFormState extends State<VoucherForm> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController codeController;
   late TextEditingController valueController;
-  late TextEditingController maxValueController;
-  late TextEditingController minOrderController;
-  late TextEditingController expireController;
+  late TextEditingController maxDiscountController;
+  late TextEditingController minOrderAmountController;
+  late TextEditingController expiredAtController;
   String type = 'percent';
-  bool active = true;
+  bool isActive = true;
 
   @override
   void initState() {
     super.initState();
-    codeController = TextEditingController(text: widget.voucher?['code'] ?? '');
-    valueController = TextEditingController(text: widget.voucher?['value']?.toString() ?? '');
-    maxValueController = TextEditingController(text: widget.voucher?['maxValue']?.toString() ?? '');
-    minOrderController = TextEditingController(text: widget.voucher?['minOrder']?.toString() ?? '');
-    expireController = TextEditingController(text: widget.voucher?['expire'] ?? '');
-    type = widget.voucher?['type'] ?? 'percent';
-    active = widget.voucher?['active'] ?? true;
+    codeController = TextEditingController(text: widget.voucher?.code ?? '');
+    valueController = TextEditingController(text: widget.voucher?.value.toString() ?? '');
+    maxDiscountController = TextEditingController(text: widget.voucher?.maxDiscount.toString() ?? '');
+    minOrderAmountController = TextEditingController(text: widget.voucher?.minOrderAmount.toString() ?? '');
+    expiredAtController = TextEditingController(text: widget.voucher?.expiredAt != null ? _formatDate(widget.voucher!.expiredAt!) : '');
+    type = widget.voucher?.type ?? 'percent';
+    isActive = widget.voucher?.isActive ?? true;
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+  }
+
+  DateTime? _parseDate(String input) {
+    try {
+      final parts = input.split('/');
+      if (parts.length == 3) {
+        return DateTime(int.parse(parts[2]), int.parse(parts[1]), int.parse(parts[0]));
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    DateTime? expiredAt;
+    if (expiredAtController.text.isNotEmpty) {
+      expiredAt = _parseDate(expiredAtController.text);
+      if (expiredAt == null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ngày hết hạn không hợp lệ. Định dạng: dd/mm/yyyy')));
+        return;
+      }
+    }
+    final voucher = Voucher(
+      id: widget.voucher?.id ?? '',
+      code: codeController.text.trim(),
+      type: type,
+      value: int.tryParse(valueController.text) ?? 0,
+      minOrderAmount: int.tryParse(minOrderAmountController.text) ?? 0,
+      maxDiscount: int.tryParse(maxDiscountController.text) ?? 100000,
+      expiredAt: expiredAt,
+      isActive: isActive,
+    );
+    try {
+      bool ok = false;
+      if (widget.voucher == null) {
+        // Thêm mới
+        final res = await http.post(
+          Uri.parse('${Config.baseUrl}/api/admin/voucher'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(voucher.toJson()),
+        );
+        ok = res.statusCode == 200 || res.statusCode == 201;
+      } else {
+        // Sửa
+        final res = await http.put(
+          Uri.parse('${Config.baseUrl}/api/admin/voucher/${widget.voucher!.id}'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(voucher.toJson()),
+        );
+        ok = res.statusCode == 200;
+      }
+      if (ok) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(widget.voucher == null ? 'Đã tạo voucher!' : 'Đã cập nhật voucher!')),
+        );
+        Navigator.pop(context, true);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Thao tác thất bại!')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi: $e')),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isEdit = widget.voucher != null;
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: 16, right: 16,
-          top: 24,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-        ),
-        child: SingleChildScrollView(
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 40, height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 24,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+      ),
+      child: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Column(
                   children: [
-                    Icon(Icons.card_giftcard, color: Colors.brown[300]),
-                    const SizedBox(width: 8),
+                    Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
                     Text(
-                      widget.voucher == null ? 'Tạo mới voucher' : 'Sửa voucher',
-                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      isEdit ? 'Cập nhật voucher' : 'Tạo mới voucher',
+                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      isEdit
+                          ? 'Chỉnh sửa thông tin voucher bên dưới.'
+                          : 'Điền đầy đủ thông tin để tạo voucher mới.',
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: codeController,
-                  decoration: const InputDecoration(
-                    labelText: 'Mã voucher',
-                    prefixIcon: Icon(Icons.confirmation_number),
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (value) => value == null || value.isEmpty ? 'Nhập mã voucher' : null,
+              ),
+              const SizedBox(height: 20),
+              TextFormField(
+                controller: codeController,
+                decoration: const InputDecoration(
+                  labelText: 'Mã voucher',
+                  prefixIcon: Icon(Icons.card_giftcard),
+                  border: OutlineInputBorder(),
                 ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  value: type,
-                  items: const [
-                    DropdownMenuItem(value: 'percent', child: Text('Giảm theo %')),
-                    DropdownMenuItem(value: 'fixed', child: Text('Giảm cố định')),
+                validator: (v) => v == null || v.trim().isEmpty ? 'Không được để trống' : null,
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                value: type,
+                items: const [
+                  DropdownMenuItem(value: 'percent', child: Text('Giảm %')),
+                  DropdownMenuItem(value: 'fixed', child: Text('Giảm cố định')),
+                ],
+                onChanged: (v) => setState(() => type = v ?? 'percent'),
+                decoration: const InputDecoration(
+                  labelText: 'Loại giảm',
+                  prefixIcon: Icon(Icons.percent),
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: valueController,
+                      decoration: InputDecoration(
+                        labelText: type == 'percent' ? 'Giá trị (%)' : 'Giá trị (VNĐ)',
+                        prefixIcon: const Icon(Icons.percent),
+                        border: const OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.number,
+                      validator: (v) => v == null || v.trim().isEmpty ? 'Không được để trống' : null,
+                    ),
+                  ),
+                  if (type == 'percent') ...[
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextFormField(
+                        controller: maxDiscountController,
+                        decoration: const InputDecoration(
+                          labelText: 'Giảm tối đa (VNĐ)',
+                          prefixIcon: Icon(Icons.money),
+                          border: OutlineInputBorder(),
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                    ),
                   ],
-                  onChanged: (v) => setState(() => type = v ?? 'percent'),
-                  decoration: const InputDecoration(
-                    labelText: 'Loại giảm giá',
-                    prefixIcon: Icon(Icons.percent),
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: valueController,
-                  decoration: InputDecoration(
-                    labelText: type == 'percent' ? 'Giá trị giảm (%)' : 'Giá trị giảm (VNĐ)',
-                    prefixIcon: Icon(type == 'percent' ? Icons.percent : Icons.money),
-                    border: const OutlineInputBorder(),
-                  ),
-                  keyboardType: TextInputType.number,
-                  validator: (value) => value == null || value.isEmpty ? 'Nhập giá trị giảm' : null,
-                ),
-                const SizedBox(height: 12),
-                if (type == 'percent')
-                  TextFormField(
-                    controller: maxValueController,
-                    decoration: const InputDecoration(
-                      labelText: 'Giảm tối đa (VNĐ)',
-                      prefixIcon: Icon(Icons.money),
-                      border: OutlineInputBorder(),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: minOrderAmountController,
+                      decoration: const InputDecoration(
+                        labelText: 'Tối thiểu đơn hàng (VNĐ)',
+                        prefixIcon: Icon(Icons.shopping_cart),
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.number,
                     ),
-                    keyboardType: TextInputType.number,
                   ),
-                if (type == 'percent') const SizedBox(height: 12),
-                TextFormField(
-                  controller: minOrderController,
-                  decoration: const InputDecoration(
-                    labelText: 'Tối thiểu đơn hàng (VNĐ)',
-                    prefixIcon: Icon(Icons.shopping_cart),
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType: TextInputType.number,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: expireController,
-                  decoration: const InputDecoration(
-                    labelText: 'Hạn sử dụng (dd/mm/yyyy)',
-                    prefixIcon: Icon(Icons.calendar_today),
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Checkbox(
-                      value: active,
-                      onChanged: (v) => setState(() => active = v ?? true),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextFormField(
+                      controller: expiredAtController,
+                      decoration: const InputDecoration(
+                        labelText: 'Hạn sử dụng (dd/mm/yyyy)',
+                        prefixIcon: Icon(Icons.calendar_today),
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.datetime,
                     ),
-                    const Text('Đang hoạt động'),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    icon: const Icon(Icons.save, color: Colors.white),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.brown,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    onPressed: () {
-                      if (_formKey.currentState!.validate()) {
-                        // Xử lý lưu voucher
-                        Navigator.pop(context);
-                      }
-                    },
-                    label: Text(widget.voucher == null ? 'Tạo mới' : 'Cập nhật',
-                        style: const TextStyle(fontSize: 16, color: Colors.white)),
                   ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Checkbox(
+                    value: isActive,
+                    onChanged: (v) => setState(() => isActive = v ?? true),
+                  ),
+                  const Text('Đang hoạt động'),
+                ],
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.save),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    backgroundColor: Colors.brown,
+                  ),
+                  onPressed: _submit,
+                  label: Text(isEdit ? 'Cập nhật' : 'Tạo mới',
+                      style: const TextStyle(fontSize: 16, color: Colors.white)),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
