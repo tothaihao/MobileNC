@@ -26,6 +26,6 @@ class Address {
 
   @override
   String toString() {
-    return [address, city, pincode].where((e) => e != null && e!.isNotEmpty).join(', ');
+    return [address, city, pincode].where((e) => e != null && e.isNotEmpty).join(', ');
   }
 }

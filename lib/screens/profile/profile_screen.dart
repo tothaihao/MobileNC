@@ -69,12 +69,12 @@ class ProfileScreen extends StatelessWidget {
             _buildProfileOption(
               icon: Icons.help,
               title: 'Trợ giúp',
-              onTap: () => Navigator.pushNamed(context, '/support-request'),
+              onTap: () => Navigator.pushNamed(context, '/contact'),
             ),
             _buildProfileOption(
               icon: Icons.chat,
               title: 'Chat với admin',
-              onTap: () => Navigator.pushNamed(context, '/support-chat'),
+              onTap: () => Navigator.pushNamed(context, '/contact'),
             ),
             const SizedBox(height: 24),
             // Logout Button

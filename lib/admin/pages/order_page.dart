@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'order_detail_page.dart';
-import 'package:do_an_mobile_nc/admin/models/order_model.dart';
-import 'package:do_an_mobile_nc/admin/services/order_service.dart';
+import 'package:do_an_mobile_nc/admin/models/admin_order_model.dart';
+import 'package:do_an_mobile_nc/admin/services/admin_order_service.dart';
 
 class OrderPage extends StatefulWidget {
   const OrderPage({Key? key}) : super(key: key);
@@ -34,7 +34,7 @@ class _OrderPageState extends State<OrderPage> {
     setState(() => isLoading = true);
     try {
       // Use the correct import for admin/models/order_model.dart
-      orders = await OrderService.getAllOrders() as List<Order>;
+      orders = await AdminOrderService.getAllOrders();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
     } finally {

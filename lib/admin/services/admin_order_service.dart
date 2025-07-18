@@ -1,12 +1,12 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:do_an_mobile_nc/config.dart';
-import 'package:do_an_mobile_nc/models/order_model.dart';
+import '../../config/app_config.dart';
+import '../models/admin_order_model.dart';
 
-class OrderService {
+class AdminOrderService {
   /// Lấy tất cả đơn hàng
   static Future<List<Order>> getAllOrders() async {
-    final res = await http.get(Uri.parse('${Config.baseUrl}/api/admin/orders/get'));
+    final res = await http.get(Uri.parse('${AppConfig.adminOrders}'));
 
     if (res.statusCode == 200) {
       final decoded = jsonDecode(res.body);
@@ -48,7 +48,7 @@ class OrderService {
 
   /// Lấy chi tiết đơn hàng
   static Future<Order> getOrderDetails(String id) async {
-    final res = await http.get(Uri.parse('${Config.baseUrl}/api/admin/orders/details/$id'));
+    final res = await http.get(Uri.parse('${AppConfig.adminOrders}/$id'));
 
     if (res.statusCode == 200) {
       final decoded = jsonDecode(res.body);
@@ -73,7 +73,7 @@ class OrderService {
   /// Cập nhật trạng thái đơn hàng
   static Future<bool> updateOrderStatus(String id, String status) async {
     final res = await http.put(
-      Uri.parse('${Config.baseUrl}/api/admin/orders/update/$id'),
+      Uri.parse('${AppConfig.adminOrders}/$id'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'status': status}),
     );

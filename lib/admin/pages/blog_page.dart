@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:do_an_mobile_nc/admin/models/blog_model.dart';
-import 'package:do_an_mobile_nc/admin/services/blog_service.dart';
+import 'package:do_an_mobile_nc/admin/models/admin_blog_model.dart';
+import 'package:do_an_mobile_nc/admin/services/admin_blog_service.dart';
 
 class BlogPage extends StatefulWidget {
   const BlogPage({Key? key}) : super(key: key);
@@ -22,7 +22,7 @@ class _BlogPageState extends State<BlogPage> {
   Future<void> fetchBlogs() async {
     setState(() { isLoading = true; });
     try {
-      blogs = await BlogService.getAllBlogs();
+      blogs = await AdminBlogService.getAllBlogs();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Lỗi tải blog: $e')),
@@ -194,7 +194,7 @@ class _BlogPageState extends State<BlogPage> {
       ),
     );
     if (confirm != true) return;
-    final ok = await BlogService.deleteBlog(blog.id);
+    final ok = await AdminBlogService.deleteBlog(blog.id);
     if (ok) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã xoá blog!')));
       fetchBlogs();
@@ -273,9 +273,9 @@ class _BlogFormState extends State<BlogForm> {
     );
     bool ok = false;
     if (widget.blog == null) {
-      ok = await BlogService.createBlog(blog);
+      ok = await AdminBlogService.createBlog(blog);
     } else {
-      ok = await BlogService.updateBlog(widget.blog!.id, blog);
+      ok = await AdminBlogService.updateBlog(widget.blog!.id, blog);
     }
     setState(() { isLoading = false; });
     if (ok) {

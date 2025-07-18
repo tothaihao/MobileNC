@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:do_an_mobile_nc/models/voucher_model.dart';
+import '../models/admin_voucher_model.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:do_an_mobile_nc/config.dart';
+import '../../config/app_config.dart';
 
 class VoucherPage extends StatefulWidget {
   const VoucherPage({Key? key}) : super(key: key);
@@ -30,7 +30,7 @@ class _VoucherPageState extends State<VoucherPage> {
   Future<void> fetchVouchers() async {
     setState(() { isLoading = true; });
     try {
-      final response = await http.get(Uri.parse('${Config.baseUrl}/api/admin/voucher'));
+      final response = await http.get(Uri.parse('${AppConfig.adminVoucher}'));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         List<dynamic> voucherList;
@@ -70,7 +70,7 @@ class _VoucherPageState extends State<VoucherPage> {
     );
     if (confirm != true) return;
     try {
-      final response = await http.delete(Uri.parse('${Config.baseUrl}/api/admin/voucher/$id'));
+      final response = await http.delete(Uri.parse('${AppConfig.adminVoucher}/$id'));
       if (response.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã xóa voucher thành công!')));
         fetchVouchers();
@@ -388,7 +388,7 @@ class _VoucherFormState extends State<VoucherForm> {
       if (widget.voucher == null) {
         // Thêm mới
         final res = await http.post(
-          Uri.parse('${Config.baseUrl}/api/admin/voucher'),
+          Uri.parse('${AppConfig.adminVoucher}'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode(voucher.toJson()),
         );
@@ -396,7 +396,7 @@ class _VoucherFormState extends State<VoucherForm> {
       } else {
         // Sửa
         final res = await http.put(
-          Uri.parse('${Config.baseUrl}/api/admin/voucher/${widget.voucher!.id}'),
+          Uri.parse('${AppConfig.adminVoucher}/${widget.voucher!.id}'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode(voucher.toJson()),
         );

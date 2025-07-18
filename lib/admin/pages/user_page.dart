@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:do_an_mobile_nc/config.dart';
-import 'package:do_an_mobile_nc/admin/models/user_model.dart';
-import 'package:do_an_mobile_nc/theme/colors.dart';
-import 'package:do_an_mobile_nc/admin/pages/user_detail_page.dart';
+import '../../config/app_config.dart';
+import '../models/admin_user_model.dart';
+import '../../theme/colors.dart';
+import 'user_detail_page.dart';
 
 class UserPage extends StatefulWidget {
   const UserPage({Key? key}) : super(key: key);
@@ -29,7 +29,7 @@ class _UserPageState extends State<UserPage> {
   Future<void> fetchUsers() async {
     try {
       setState(() => isLoading = true);
-      final response = await http.get(Uri.parse('${Config.baseUrl}/api/admin/users'));
+      final response = await http.get(Uri.parse('${AppConfig.adminUsers}'));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         List<dynamic> userList;
@@ -85,7 +85,7 @@ class _UserPageState extends State<UserPage> {
 
       if (confirm != true) return;
 
-      final res = await http.delete(Uri.parse('${Config.baseUrl}/api/admin/users/$id'));
+      final res = await http.delete(Uri.parse('${AppConfig.adminUsers}/$id'));
 
       if (res.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -155,7 +155,7 @@ class _UserPageState extends State<UserPage> {
                 };
                 try {
                   final res = await http.put(
-                    Uri.parse('${Config.baseUrl}/api/admin/users/${user.id}'),
+                    Uri.parse('${AppConfig.adminUsers}/${user.id}'),
                     headers: {'Content-Type': 'application/json'},
                     body: jsonEncode(body),
                   );
@@ -183,7 +183,7 @@ class _UserPageState extends State<UserPage> {
 
     if (result == true) {
       try {
-        final res = await http.get(Uri.parse('${Config.baseUrl}/api/admin/users/${user.id}'));
+        final res = await http.get(Uri.parse('${AppConfig.adminUsers}/${user.id}'));
         if (res.statusCode == 200) {
           final data = jsonDecode(res.body);
           final updatedUser = User.fromJson(

@@ -1,17 +1,17 @@
-import 'package:do_an_mobile_nc/admin/pages/blog_page.dart';
-import 'package:do_an_mobile_nc/admin/pages/order_page.dart';
-import 'package:do_an_mobile_nc/admin/pages/product_page.dart';
-import 'package:do_an_mobile_nc/admin/pages/user_page.dart';
-import 'package:do_an_mobile_nc/admin/pages/voucher_page.dart';
+import '../pages/blog_page.dart';
+import '../pages/order_page.dart';
+import '../pages/product_page.dart';
+import '../pages/user_page.dart';
+import '../pages/voucher_page.dart';
 import 'package:flutter/material.dart';
 import '../widgets/sidebar.dart';
 import '../widgets/header.dart';
 import '../widgets/statistic_card.dart';
 import '../widgets/sales_chart.dart';
-import 'package:do_an_mobile_nc/config.dart';
+import '../../config/app_config.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:do_an_mobile_nc/admin/services/dashboard_service.dart';
+import '../services/admin_dashboard_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -36,10 +36,10 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Future<void> fetchDashboardData() async {
     setState(() => isLoading = true);
-    adminCount = await DashboardService.getAdminCount();
-    userCount = await DashboardService.getUserCount();
-    orderCount = await DashboardService.getOrderCount();
-    totalRevenue = await DashboardService.getTotalRevenue();
+    adminCount = await AdminDashboardService.getAdminCount();
+    userCount = await AdminDashboardService.getUserCount();
+    orderCount = await AdminDashboardService.getOrderCount();
+    totalRevenue = await AdminDashboardService.getTotalRevenue();
     setState(() => isLoading = false);
   }
 

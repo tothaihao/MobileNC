@@ -1,13 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
-import 'package:do_an_mobile_nc/config.dart';
-import 'package:do_an_mobile_nc/models/product_model.dart';
+import '../../config/app_config.dart';
+import '../models/admin_product_model.dart';
 
-class ProductService {
+class AdminProductService {
   // Lấy danh sách tất cả sản phẩm
   static Future<List<Product>> getAllProducts() async {
-    final res = await http.get(Uri.parse('${Config.baseUrl}/api/admin/products/get'));
+    final res = await http.get(Uri.parse('${AppConfig.adminProducts}'));
     if (res.statusCode == 200) {
       final data = jsonDecode(res.body);
       List products = data is List ? data : data['products'] ?? data['data'] ?? [];
@@ -20,7 +20,7 @@ class ProductService {
   // Thêm sản phẩm mới
   static Future<bool> addProduct(Product product) async {
     final res = await http.post(
-      Uri.parse('${Config.baseUrl}/api/admin/products/add'),
+      Uri.parse('${AppConfig.adminProducts}'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(product.toJson()),
     );
@@ -30,7 +30,7 @@ class ProductService {
   // Cập nhật sản phẩm
   static Future<bool> updateProduct(String id, Product product) async {
     final res = await http.put(
-      Uri.parse('${Config.baseUrl}/api/admin/products/edit/$id'),
+      Uri.parse('${AppConfig.adminProducts}/$id'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(product.toJson()),
     );
@@ -39,7 +39,7 @@ class ProductService {
 
   // Xóa sản phẩm
   static Future<bool> deleteProduct(String id) async {
-    final res = await http.delete(Uri.parse('${Config.baseUrl}/api/admin/products/delete/$id'));
+    final res = await http.delete(Uri.parse('${AppConfig.adminProducts}/$id'));
     return res.statusCode == 200;
   }
 
@@ -47,7 +47,7 @@ class ProductService {
   static Future<String> uploadImage(File imageFile) async {
     var request = http.MultipartRequest(
       'POST',
-      Uri.parse('${Config.baseUrl}/api/admin/products/upload-image'),
+      Uri.parse('${AppConfig.adminProducts}/upload-image'),
     );
     request.files.add(await http.MultipartFile.fromPath('my_file', imageFile.path));
     final response = await request.send();

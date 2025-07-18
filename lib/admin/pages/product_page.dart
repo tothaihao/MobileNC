@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'package:do_an_mobile_nc/models/product_model.dart';
-import 'package:do_an_mobile_nc/admin/services/product_service.dart';
+import '../models/admin_product_model.dart'; // ✅ Use admin version
+import '../services/admin_product_service.dart'; // ✅ Use admin service
 
 class ProductPage extends StatefulWidget {
   const ProductPage({Key? key}) : super(key: key);
@@ -12,7 +12,7 @@ class ProductPage extends StatefulWidget {
 }
 
 class _ProductPageState extends State<ProductPage> {
-  List<Product> products = [];
+  List<Product> products = []; // ✅ Now matches admin Product type
   bool isLoading = true;
   String selectedCategory = 'Tất cả';
   String searchText = '';
@@ -41,7 +41,7 @@ class _ProductPageState extends State<ProductPage> {
   Future<void> fetchProducts() async {
     setState(() => isLoading = true);
     try {
-      final list = await ProductService.getAllProducts();
+      final list = await AdminProductService.getAllProducts();
       setState(() {
         products = list;
         isLoading = false;
@@ -95,7 +95,7 @@ class _ProductPageState extends State<ProductPage> {
     );
     if (confirm != true) return;
     try {
-      final ok = await ProductService.deleteProduct(product.id);
+      final ok = await AdminProductService.deleteProduct(product.id);
       if (ok) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Đã xóa sản phẩm!')),
@@ -449,7 +449,7 @@ class _ProductFormState extends State<ProductForm> {
     String imageUrl = widget.product?.image ?? '';
     if (_imageFile != null) {
       try {
-        imageUrl = await ProductService.uploadImage(_imageFile!);
+        imageUrl = await AdminProductService.uploadImage(_imageFile!);
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Lỗi upload ảnh: $e')),
@@ -475,9 +475,9 @@ class _ProductFormState extends State<ProductForm> {
     );
     bool ok = false;
     if (widget.product == null) {
-      ok = await ProductService.addProduct(product);
+      ok = await AdminProductService.addProduct(product);
     } else {
-      ok = await ProductService.updateProduct(product.id, product);
+      ok = await AdminProductService.updateProduct(product.id, product);
     }
     if (ok) {
       ScaffoldMessenger.of(context).showSnackBar(

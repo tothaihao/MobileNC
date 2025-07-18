@@ -1,11 +1,11 @@
-import 'package:do_an_mobile_nc/models/address_model.dart';
-import 'package:do_an_mobile_nc/config.dart';
+import '../models/admin_address_model.dart';
+import '../../config/app_config.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-class AddressService {
+class AdminAddressService {
   static Future<Address?> getAddressById(String id) async {
-  final res = await http.get(Uri.parse('${Config.baseUrl}/api/address/$id'));
+  final res = await http.get(Uri.parse('${AppConfig.address}/$id'));
   if (res.statusCode == 200) {
     final data = jsonDecode(res.body);
     print('DEBUG: API address raw response: $data');

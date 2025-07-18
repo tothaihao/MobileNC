@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:do_an_mobile_nc/admin/models/order_model.dart';
-import 'package:do_an_mobile_nc/admin/models/address_model.dart';
-import 'package:do_an_mobile_nc/admin/services/order_service.dart';
-import 'package:do_an_mobile_nc/admin/services/address_service.dart';
+import 'package:do_an_mobile_nc/admin/models/admin_order_model.dart';
+import 'package:do_an_mobile_nc/admin/models/admin_address_model.dart';
+import 'package:do_an_mobile_nc/admin/services/admin_order_service.dart';
+import 'package:do_an_mobile_nc/admin/services/admin_address_service.dart';
 
 class OrderDetailPage extends StatefulWidget {
   final String orderId;
@@ -25,7 +25,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
 
   Future<void> fetchOrder() async {
     try {
-      final result = await OrderService.getOrderDetails(widget.orderId);
+      final result = await AdminOrderService.getOrderDetails(widget.orderId);
       print('DEBUG: order = ${result.toJson()}');
       setState(() {
         order = result as Order?;
@@ -34,10 +34,10 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
 
       if (order != null && order!.addressId.isNotEmpty) {
         print('DEBUG: order!.addressId = ${order!.addressId}');
-        final addr = await AddressService.getAddressById(order!.addressId);
+        final addr = await AdminAddressService.getAddressById(order!.addressId);
         print('DEBUG: address response = $addr');
         setState(() {
-          shippingAddress = addr as Address?;
+          shippingAddress = addr;
         });
       }
     } catch (e) {
@@ -48,7 +48,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
 
   Future<void> updateStatus(String newStatus) async {
     try {
-      final success = await OrderService.updateOrderStatus(order!.id, newStatus);
+      final success = await AdminOrderService.updateOrderStatus(order!.id, newStatus);
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cập nhật thành công')));
         fetchOrder();

@@ -1,4 +1,4 @@
-import 'address_model.dart';
+import 'admin_address_model.dart';
 
 class Order {
   final String id;
