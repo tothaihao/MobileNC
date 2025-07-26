@@ -1,3 +1,5 @@
+import '../utils/currency_helper.dart';
+
 class CartItem {
   final String productId;
   final String title;
@@ -55,8 +57,8 @@ class Cart {
 
   int get totalPrice {
     return items.fold(0, (total, item) {
-      final int price = item.salePrice ?? item.price;
-      return total + (price * item.quantity);
+      final effectivePrice = CurrencyHelper.getEffectivePrice(item.price, item.salePrice);
+      return total + (effectivePrice * item.quantity);
     });
   }
 

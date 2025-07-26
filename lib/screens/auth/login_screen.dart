@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/logo_widget.dart';
 import '../../theme/colors.dart';
+import 'package:do_an_mobile_nc/screens/auth/forgotpass.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -203,7 +204,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   TextButton(
                     onPressed: () {
-                      // TODO: Hiển thị dialog hoặc chuyển sang màn hình quên mật khẩu
+                       authProvider.resetMessages();
+                   Navigator.push(
+                   context,
+                  MaterialPageRoute(
+                   builder: (context) => const ForgotPasswordScreen(),
+                ),
+           );
                     },
                     child: Text('Quên mật khẩu?'),
                   ),

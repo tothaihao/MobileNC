@@ -229,7 +229,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
             return suggestion;
           }
 
-          return _createProductResponse(products, 'Dưới đây là các sản phẩm phù hợp: (Nhấn vào tên để xem chi tiết)');
+          return _createProductResponse(products, 'Dưới đây là các sản phẩm phù hợp với tình trạng hoặc mong muốn: (Nhấn vào tên để xem chi tiết)');
 
         case 'best_seller':
           print('ℹ️ Fetching best seller products...');

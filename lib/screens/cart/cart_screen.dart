@@ -4,6 +4,7 @@ import '../../providers/cart_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/cart_model.dart';
 import '../../theme/colors.dart';
+import '../../utils/currency_helper.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({Key? key}) : super(key: key);
@@ -157,10 +158,33 @@ class _CartScreenState extends State<CartScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    '${item.price.toStringAsFixed(0)} VNĐ',
-                    style: TextStyle(color: AppColors.primary),
-                  ),
+                  // Display price with sale price if available
+                  if (item.salePrice != null && item.salePrice! < item.price) ...[
+                    Row(
+                      children: [
+                        Text(
+                          CurrencyHelper.formatVND(item.price),
+                          style: const TextStyle(
+                            color: AppColors.textLight,
+                            decoration: TextDecoration.lineThrough,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          CurrencyHelper.formatVND(item.salePrice!),
+                          style: const TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ] else
+                    Text(
+                      CurrencyHelper.formatVND(item.price),
+                      style: const TextStyle(color: AppColors.primary),
+                    ),
                 ],
               ),
             ),
@@ -251,7 +275,7 @@ class _CartScreenState extends State<CartScreen> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
               ),
               Text(
-                '${cart.totalPrice.toStringAsFixed(0)} VNĐ',
+                CurrencyHelper.formatVND(cart.totalPrice),
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,

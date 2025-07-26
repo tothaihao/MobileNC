@@ -131,4 +131,31 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
     return result;
   }
+
+  Future<bool> forgotPassword(String email) async {
+  try {
+    _isLoading = true;
+    _error = null;
+    _successMessage = null;
+    notifyListeners();
+
+    // Giả lập API call - thay bằng API thực tế của bạn
+    await Future.delayed(const Duration(seconds: 2));
+
+    // Kiểm tra email hợp lệ (trong thực tế sẽ gọi API)
+    if (!email.contains('@')) {
+      throw Exception('Email không hợp lệ');
+    }
+
+    _successMessage = 'Đã gửi liên kết đặt lại mật khẩu đến $email';
+    _isLoading = false;
+    notifyListeners();
+    return true;
+  } catch (e) {
+    _error = 'Lỗi: ${e.toString()}';
+    _isLoading = false;
+    notifyListeners();
+    return false;
+  }
+}
 } 
