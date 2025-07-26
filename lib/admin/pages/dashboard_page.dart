@@ -148,105 +148,15 @@ class _DashboardPageState extends State<DashboardPage> {
       body: isLoading
         ? const Center(child: CircularProgressIndicator())
         : Container(
-            color: const Color(0xFFF5F5F5), // Background color
+            color: const Color(0xFFF5F5F5),
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Overview Stats Row
-                  Row(
-                    children: [
-                      Expanded(
-                        child: StatisticCard(
-                          title: 'Doanh thu hôm nay',
-                          value: '${_formatCurrency(todayRevenue)}',
-                          icon: Icons.today,
-                          iconColor: Colors.green,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: StatisticCard(
-                          title: 'Đơn hàng hôm nay',
-                          value: '$todayOrders',
-                          icon: Icons.shopping_cart_outlined,
-                          iconColor: Colors.blue,
-                        ),
-                      ),
-                    ],
-                  ),
+                  // FIXED: Responsive StatisticCards using Wrap instead of Row
+                  _buildResponsiveStatsSection(),
                   
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: StatisticCard(
-                          title: 'Đơn chờ xử lý',
-                          value: '$pendingOrders',
-                          icon: Icons.pending_actions,
-                          iconColor: Colors.orange,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: StatisticCard(
-                          title: 'Đơn hoàn thành',
-                          value: '$completedOrders',
-                          icon: Icons.check_circle,
-                          iconColor: Colors.green,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 12),
-                  // Total Stats Row
-                  Row(
-                    children: [
-                      Expanded(
-                        child: StatisticCard(
-                          title: 'Tổng doanh thu',
-                          value: '${_formatCurrency(totalRevenue)}',
-                          icon: Icons.attach_money,
-                          iconColor: Colors.green,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: StatisticCard(
-                          title: 'Tổng đơn hàng',
-                          value: '$orderCount',
-                          icon: Icons.shopping_cart,
-                          iconColor: Colors.blue,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: StatisticCard(
-                          title: 'Số admin',
-                          value: '$adminCount',
-                          icon: Icons.admin_panel_settings,
-                          iconColor: Colors.red,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: StatisticCard(
-                          title: 'Số user',
-                          value: '$userCount',
-                          icon: Icons.person,
-                          iconColor: Colors.purple,
-                        ),
-                      ),
-                    ],
-                  ),
-
                   const SizedBox(height: 24),
 
                   // Recent Orders Section
@@ -369,6 +279,162 @@ class _DashboardPageState extends State<DashboardPage> {
     } else {
       return '$amount VND';
     }
+  }
+
+  // NEW METHOD: Responsive Stats Section
+  Widget _buildResponsiveStatsSection() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 600;
+    final cardWidth = isTablet 
+      ? (screenWidth - 48) / 3 - 8  // 3 cards per row on tablet
+      : (screenWidth - 48) / 2 - 6; // 2 cards per row on mobile
+
+    return Column(
+      children: [
+        // Today's Stats
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            SizedBox(
+              width: cardWidth,
+              child: StatisticCard(
+                title: 'Doanh thu hôm nay',
+                value: _formatCurrency(todayRevenue),
+                icon: Icons.today,
+                iconColor: Colors.green,
+              ),
+            ),
+            SizedBox(
+              width: cardWidth,
+              child: StatisticCard(
+                title: 'Đơn hàng hôm nay',
+                value: '$todayOrders',
+                icon: Icons.shopping_cart_outlined,
+                iconColor: Colors.blue,
+              ),
+            ),
+            if (isTablet) // Third card on same row for tablets
+              SizedBox(
+                width: cardWidth,
+                child: StatisticCard(
+                  title: 'Đơn chờ xử lý',
+                  value: '$pendingOrders',
+                  icon: Icons.pending_actions,
+                  iconColor: Colors.orange,
+                ),
+              ),
+          ],
+        ),
+        
+        const SizedBox(height: 12),
+        
+        // Order Status Stats
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            if (!isTablet) // Show on mobile (wasn't shown above)
+              SizedBox(
+                width: cardWidth,
+                child: StatisticCard(
+                  title: 'Đơn chờ xử lý',
+                  value: '$pendingOrders',
+                  icon: Icons.pending_actions,
+                  iconColor: Colors.orange,
+                ),
+              ),
+            SizedBox(
+              width: cardWidth,
+              child: StatisticCard(
+                title: 'Đơn hoàn thành',
+                value: '$completedOrders',
+                icon: Icons.check_circle,
+                iconColor: Colors.green,
+              ),
+            ),
+            if (isTablet)
+              SizedBox(
+                width: cardWidth,
+                child: StatisticCard(
+                  title: 'Tổng doanh thu',
+                  value: _formatCurrency(totalRevenue),
+                  icon: Icons.attach_money,
+                  iconColor: Colors.green,
+                ),
+              ),
+          ],
+        ),
+
+        const SizedBox(height: 12),
+        
+        // Total Stats
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            if (!isTablet) // Show on mobile
+              SizedBox(
+                width: cardWidth,
+                child: StatisticCard(
+                  title: 'Tổng doanh thu',
+                  value: _formatCurrency(totalRevenue),
+                  icon: Icons.attach_money,
+                  iconColor: Colors.green,
+                ),
+              ),
+            SizedBox(
+              width: cardWidth,
+              child: StatisticCard(
+                title: 'Tổng đơn hàng',
+                value: '$orderCount',
+                icon: Icons.shopping_cart,
+                iconColor: Colors.blue,
+              ),
+            ),
+            if (isTablet)
+              SizedBox(
+                width: cardWidth,
+                child: StatisticCard(
+                  title: 'Số admin',
+                  value: '$adminCount',
+                  icon: Icons.admin_panel_settings,
+                  iconColor: Colors.red,
+                ),
+              ),
+          ],
+        ),
+
+        const SizedBox(height: 12),
+        
+        // User Stats
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            if (!isTablet) // Show on mobile
+              SizedBox(
+                width: cardWidth,
+                child: StatisticCard(
+                  title: 'Số admin',
+                  value: '$adminCount',
+                  icon: Icons.admin_panel_settings,
+                  iconColor: Colors.red,
+                ),
+              ),
+            SizedBox(
+              width: cardWidth,
+              child: StatisticCard(
+                title: 'Số user',
+                value: '$userCount',
+                icon: Icons.person,
+                iconColor: Colors.purple,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
   }
 
   Widget _buildOrderItem(Map<String, dynamic> order) {
