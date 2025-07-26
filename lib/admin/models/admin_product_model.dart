@@ -30,21 +30,59 @@ class Product {
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
-    return Product(
-      id: json['_id'],
-      image: json['image'],
-      title: json['title'],
-      description: json['description'],
-      category: json['category'],
-      size: json['size'],
-      price: json['price'],
-      salePrice: json['salePrice'],
-      totalStock: json['totalStock'],
-      averageReview: json['averageReview'].toDouble(),
-      stockStatus: json['stockStatus'],
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
-      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
-    );
+    try {
+      print('🏗️ Creating Product from JSON: $json');
+      
+      return Product(
+        id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
+        image: json['image']?.toString() ?? '',
+        title: json['title']?.toString() ?? '',
+        description: json['description']?.toString(),
+        category: json['category']?.toString() ?? '',
+        size: json['size']?.toString() ?? '',
+        price: _parseInt(json['price']) ?? 0,
+        salePrice: _parseInt(json['salePrice']),
+        totalStock: _parseInt(json['totalStock']) ?? 0,
+        averageReview: _parseDouble(json['averageReview']) ?? 0.0,
+        stockStatus: json['stockStatus']?.toString() ?? '',
+        createdAt: _parseDateTime(json['createdAt']),
+        updatedAt: _parseDateTime(json['updatedAt']),
+      );
+    } catch (e) {
+      print('❌ Error creating Product from JSON: $e');
+      print('🔍 Problematic JSON: $json');
+      rethrow;
+    }
+  }
+  
+  // Helper methods for safe parsing
+  static int? _parseInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
+  
+  static double? _parseDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
+  }
+  
+  static DateTime? _parseDateTime(dynamic value) {
+    if (value == null) return null;
+    if (value is String) {
+      try {
+        return DateTime.parse(value);
+      } catch (e) {
+        print('⚠️ Failed to parse DateTime: $value');
+        return null;
+      }
+    }
+    return null;
   }
 
   Map<String, dynamic> toJson() {

@@ -41,15 +41,24 @@ class _ProductPageState extends State<ProductPage> {
   Future<void> fetchProducts() async {
     setState(() => isLoading = true);
     try {
+      print('🔄 Starting to fetch products...');
       final list = await AdminProductService.getAllProducts();
+      print('✅ Successfully fetched ${list.length} products');
+      
       setState(() {
         products = list;
         isLoading = false;
       });
     } catch (e) {
+      print('❌ Error fetching products: $e');
       setState(() => isLoading = false);
+      
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi tải sản phẩm: $e')),
+        SnackBar(
+          content: Text('Lỗi tải sản phẩm: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+        ),
       );
     }
   }

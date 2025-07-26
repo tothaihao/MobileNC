@@ -14,12 +14,15 @@ class FeatureProvider with ChangeNotifier {
   final FeatureService _service = FeatureService();
 
   Future<void> fetchBanners() async {
+    print('DEBUG: FeatureProvider.fetchBanners() called');
     _isLoading = true;
     _error = null;
     notifyListeners();
     try {
       _banners = await _service.fetchBanners();
+      print('DEBUG: Successfully fetched ${_banners.length} banners');
     } catch (e) {
+      print('DEBUG: Error fetching banners: $e');
       _error = e.toString();
     }
     _isLoading = false;

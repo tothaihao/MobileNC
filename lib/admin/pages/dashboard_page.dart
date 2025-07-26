@@ -75,22 +75,18 @@ class _DashboardPageState extends State<DashboardPage> {
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: ElevatedButton.icon(
-              icon: const Icon(Icons.logout),
-              label: const Text('Đăng xuất'),
+              icon: const Icon(Icons.home),
+              label: const Text('Về trang chủ'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFD7B7A3),
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 elevation: 0,
               ),
-              onPressed: () async {
-  // Xóa token trong SharedPreferences
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.remove('token');
-  await prefs.remove('user');
-  // Chuyển về trang đăng nhập
-  Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
-},
+              onPressed: () {
+                // Quay về trang home
+                Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+              },
             ),
           ),
         ],
@@ -151,181 +147,125 @@ class _DashboardPageState extends State<DashboardPage> {
       ),
       body: isLoading
         ? const Center(child: CircularProgressIndicator())
-        : SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Overview Stats Row
-                Row(
-                  children: [
-                    Expanded(
-                      child: StatisticCard(
-                        title: 'Doanh thu hôm nay',
-                        value: '${_formatCurrency(todayRevenue)}',
-                        icon: Icons.today,
-                        iconColor: Colors.green,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: StatisticCard(
-                        title: 'Đơn hàng hôm nay',
-                        value: '$todayOrders',
-                        icon: Icons.shopping_cart_outlined,
-                        iconColor: Colors.blue,
-                      ),
-                    ),
-                  ],
-                ),
-                
-                Row(
-                  children: [
-                    Expanded(
-                      child: StatisticCard(
-                        title: 'Đơn chờ xử lý',
-                        value: '$pendingOrders',
-                        icon: Icons.pending_actions,
-                        iconColor: Colors.orange,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: StatisticCard(
-                        title: 'Đơn hoàn thành',
-                        value: '$completedOrders',
-                        icon: Icons.check_circle,
-                        iconColor: Colors.green,
-                      ),
-                    ),
-                  ],
-                ),
+        : Container(
+            color: const Color(0xFFF5F5F5),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // FIXED: Responsive StatisticCards using Wrap instead of Row
+                  _buildResponsiveStatsSection(),
+                  
+                  const SizedBox(height: 24),
 
-                // Total Stats Row
-                Row(
-                  children: [
-                    Expanded(
-                      child: StatisticCard(
-                        title: 'Tổng doanh thu',
-                        value: '${_formatCurrency(totalRevenue)}',
-                        icon: Icons.attach_money,
-                        iconColor: Colors.green,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: StatisticCard(
-                        title: 'Tổng đơn hàng',
-                        value: '$orderCount',
-                        icon: Icons.shopping_cart,
-                        iconColor: Colors.blue,
-                      ),
-                    ),
-                  ],
-                ),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: StatisticCard(
-                        title: 'Số admin',
-                        value: '$adminCount',
-                        icon: Icons.admin_panel_settings,
-                        iconColor: Colors.red,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: StatisticCard(
-                        title: 'Số user',
-                        value: '$userCount',
-                        icon: Icons.person,
-                        iconColor: Colors.purple,
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 24),
-
-                // Recent Orders Section
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              'Đơn hàng gần đây',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
+                  // Recent Orders Section
+                  Card(
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Đơn hàng gần đây',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (_) => const OrderPage()),
-                                );
-                              },
-                              child: const Text('Xem tất cả'),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        ...recentOrders.take(5).map((order) => 
-                          _buildOrderItem(order),
-                        ).toList(),
-                      ],
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => const OrderPage()),
+                                  );
+                                },
+                                child: const Text('Xem tất cả'),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          recentOrders.isEmpty 
+                            ? const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(20),
+                                  child: Text(
+                                    'Chưa có đơn hàng nào',
+                                    style: TextStyle(color: Colors.grey),
+                                  ),
+                                )
+                              )
+                            : Column(
+                                children: recentOrders.take(5).map((order) => 
+                                  _buildOrderItem(order),
+                                ).toList(),
+                              ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
 
-                const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-                // Top Products Section
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              'Sản phẩm bán chạy',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
+                  // Top Products Section
+                  Card(
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Sản phẩm bán chạy',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (_) => const ProductPage()),
-                                );
-                              },
-                              child: const Text('Xem tất cả'),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        ...topProducts.take(5).map((product) => 
-                          _buildProductItem(product),
-                        ).toList(),
-                      ],
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => const ProductPage()),
+                                  );
+                                },
+                                child: const Text('Xem tất cả'),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          topProducts.isEmpty 
+                            ? const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(20),
+                                  child: Text(
+                                    'Chưa có dữ liệu sản phẩm',
+                                    style: TextStyle(color: Colors.grey),
+                                  ),
+                                )
+                              )
+                            : Column(
+                                children: topProducts.take(5).map((product) => 
+                                  _buildProductItem(product),
+                                ).toList(),
+                              ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
 
-                const SizedBox(height: 24),
-              ],
+                  const SizedBox(height: 24),
+                ],
+              ),
             ),
           ),
     );
@@ -341,28 +281,163 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
-  Widget _buildOrderItem(Map<String, dynamic> order) {
-    Color statusColor;
-    String statusText;
-    
-    switch (order['status']) {
-      case 'completed':
-        statusColor = Colors.green;
-        statusText = 'Hoàn thành';
-        break;
-      case 'pending':
-        statusColor = Colors.orange;
-        statusText = 'Chờ xử lý';
-        break;
-      case 'processing':
-        statusColor = Colors.blue;
-        statusText = 'Đang xử lý';
-        break;
-      default:
-        statusColor = Colors.grey;
-        statusText = 'Khác';
-    }
+  // NEW METHOD: Responsive Stats Section
+  Widget _buildResponsiveStatsSection() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 600;
+    final cardWidth = isTablet 
+      ? (screenWidth - 48) / 3 - 8  // 3 cards per row on tablet
+      : (screenWidth - 48) / 2 - 6; // 2 cards per row on mobile
 
+    return Column(
+      children: [
+        // Today's Stats
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            SizedBox(
+              width: cardWidth,
+              child: StatisticCard(
+                title: 'Doanh thu hôm nay',
+                value: _formatCurrency(todayRevenue),
+                icon: Icons.today,
+                iconColor: Colors.green,
+              ),
+            ),
+            SizedBox(
+              width: cardWidth,
+              child: StatisticCard(
+                title: 'Đơn hàng hôm nay',
+                value: '$todayOrders',
+                icon: Icons.shopping_cart_outlined,
+                iconColor: Colors.blue,
+              ),
+            ),
+            if (isTablet) // Third card on same row for tablets
+              SizedBox(
+                width: cardWidth,
+                child: StatisticCard(
+                  title: 'Đơn chờ xử lý',
+                  value: '$pendingOrders',
+                  icon: Icons.pending_actions,
+                  iconColor: Colors.orange,
+                ),
+              ),
+          ],
+        ),
+        
+        const SizedBox(height: 12),
+        
+        // Order Status Stats
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            if (!isTablet) // Show on mobile (wasn't shown above)
+              SizedBox(
+                width: cardWidth,
+                child: StatisticCard(
+                  title: 'Đơn chờ xử lý',
+                  value: '$pendingOrders',
+                  icon: Icons.pending_actions,
+                  iconColor: Colors.orange,
+                ),
+              ),
+            SizedBox(
+              width: cardWidth,
+              child: StatisticCard(
+                title: 'Đơn hoàn thành',
+                value: '$completedOrders',
+                icon: Icons.check_circle,
+                iconColor: Colors.green,
+              ),
+            ),
+            if (isTablet)
+              SizedBox(
+                width: cardWidth,
+                child: StatisticCard(
+                  title: 'Tổng doanh thu',
+                  value: _formatCurrency(totalRevenue),
+                  icon: Icons.attach_money,
+                  iconColor: Colors.green,
+                ),
+              ),
+          ],
+        ),
+
+        const SizedBox(height: 12),
+        
+        // Total Stats
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            if (!isTablet) // Show on mobile
+              SizedBox(
+                width: cardWidth,
+                child: StatisticCard(
+                  title: 'Tổng doanh thu',
+                  value: _formatCurrency(totalRevenue),
+                  icon: Icons.attach_money,
+                  iconColor: Colors.green,
+                ),
+              ),
+            SizedBox(
+              width: cardWidth,
+              child: StatisticCard(
+                title: 'Tổng đơn hàng',
+                value: '$orderCount',
+                icon: Icons.shopping_cart,
+                iconColor: Colors.blue,
+              ),
+            ),
+            if (isTablet)
+              SizedBox(
+                width: cardWidth,
+                child: StatisticCard(
+                  title: 'Số admin',
+                  value: '$adminCount',
+                  icon: Icons.admin_panel_settings,
+                  iconColor: Colors.red,
+                ),
+              ),
+          ],
+        ),
+
+        const SizedBox(height: 12),
+        
+        // User Stats
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            if (!isTablet) // Show on mobile
+              SizedBox(
+                width: cardWidth,
+                child: StatisticCard(
+                  title: 'Số admin',
+                  value: '$adminCount',
+                  icon: Icons.admin_panel_settings,
+                  iconColor: Colors.red,
+                ),
+              ),
+            SizedBox(
+              width: cardWidth,
+              child: StatisticCard(
+                title: 'Số user',
+                value: '$userCount',
+                icon: Icons.person,
+                iconColor: Colors.purple,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOrderItem(Map<String, dynamic> order) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
       padding: const EdgeInsets.all(12),
@@ -373,16 +448,17 @@ class _DashboardPageState extends State<DashboardPage> {
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: statusColor.withOpacity(0.1),
-            child: Text(
-              '#${order['id']}',
-              style: TextStyle(
-                color: statusColor,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.orange[100],
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              Icons.receipt_long,
+              color: Colors.orange[600],
+              size: 20,
             ),
           ),
           const SizedBox(width: 12),
@@ -391,18 +467,23 @@ class _DashboardPageState extends State<DashboardPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  order['customer'] ?? 'N/A',
+                  'Đơn hàng #${order['orderNumber']?.toString() ?? order['id']?.toString() ?? 'N/A'}',
                   style: const TextStyle(
                     fontWeight: FontWeight.w500,
                     fontSize: 14,
                   ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
+                const SizedBox(height: 2),
                 Text(
-                  '${_formatCurrency(order['amount'] ?? 0)}',
+                  '${order['customerName']?.toString() ?? 'Khách hàng'} | ${_formatCurrency(order['total'] ?? 0)}',
                   style: TextStyle(
                     color: Colors.grey[600],
                     fontSize: 12,
                   ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ],
             ),
@@ -410,14 +491,14 @@ class _DashboardPageState extends State<DashboardPage> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.1),
+              color: _getOrderStatusColor(order['status']?.toString() ?? 'pending'),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
-              statusText,
-              style: TextStyle(
-                color: statusColor,
-                fontSize: 11,
+              _getOrderStatusText(order['status']?.toString() ?? 'pending'),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 10,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -425,6 +506,32 @@ class _DashboardPageState extends State<DashboardPage> {
         ],
       ),
     );
+  }
+
+  Color _getOrderStatusColor(String status) {
+    switch (status) {
+      case 'completed':
+        return Colors.green;
+      case 'pending':
+        return Colors.orange;
+      case 'processing':
+        return Colors.blue;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _getOrderStatusText(String status) {
+    switch (status) {
+      case 'completed':
+        return 'Hoàn thành';
+      case 'pending':
+        return 'Chờ xử lý';
+      case 'processing':
+        return 'Đang xử lý';
+      default:
+        return 'Khác';
+    }
   }
 
   Widget _buildProductItem(Map<String, dynamic> product) {
@@ -457,18 +564,23 @@ class _DashboardPageState extends State<DashboardPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  product['name'] ?? 'N/A',
+                  product['name']?.toString() ?? 'N/A',
                   style: const TextStyle(
                     fontWeight: FontWeight.w500,
                     fontSize: 14,
                   ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
+                const SizedBox(height: 2),
                 Text(
-                  'Đã bán: ${product['sold']} | ${_formatCurrency(product['revenue'] ?? 0)}',
+                  'Đã bán: ${product['sold'] ?? 0} | ${_formatCurrency(product['revenue'] ?? 0)}',
                   style: TextStyle(
                     color: Colors.grey[600],
                     fontSize: 12,
                   ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ],
             ),

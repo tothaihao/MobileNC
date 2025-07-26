@@ -24,44 +24,85 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
   }
 
   Future<void> fetchOrder() async {
+    setState(() => isLoading = true);
     try {
+      print('DEBUG: Fetching order details for ID: ${widget.orderId}');
       final result = await AdminOrderService.getOrderDetails(widget.orderId);
       print('DEBUG: order = ${result.toJson()}');
       setState(() {
-        order = result as Order?;
+        order = result;
         isLoading = false;
       });
 
       if (order != null && order!.addressId.isNotEmpty) {
         print('DEBUG: order!.addressId = ${order!.addressId}');
-        final addr = await AdminAddressService.getAddressById(order!.addressId);
-        print('DEBUG: address response = $addr');
-        setState(() {
-          shippingAddress = addr;
-        });
+        try {
+          final addr = await AdminAddressService.getAddressById(order!.addressId);
+          print('DEBUG: address response = $addr');
+          setState(() {
+            shippingAddress = addr;
+          });
+        } catch (addressError) {
+          print('DEBUG: Error fetching address: $addressError');
+          // Không hiển thị lỗi address vì không quan trọng lắm
+        }
       }
     } catch (e) {
+      print('DEBUG: Error fetching order: $e');
       setState(() => isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Lỗi khi tải chi tiết đơn hàng: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
     }
   }
 
   Future<void> updateStatus(String newStatus) async {
     try {
+      print('DEBUG: Updating order ${order!.id} to status: $newStatus');
       final success = await AdminOrderService.updateOrderStatus(order!.id, newStatus);
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cập nhật thành công')));
-        fetchOrder();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cập nhật trạng thái thành công!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        fetchOrder(); // Reload để cập nhật UI
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cập nhật thất bại')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cập nhật thất bại. Vui lòng thử lại.'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi cập nhật: $e')));
+      print('DEBUG: Error updating status: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Lỗi cập nhật: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
   String _formatDate(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+  }
+
+  String _formatCurrency(int amount) {
+    if (amount >= 1000000) {
+      return '${(amount / 1000000).toStringAsFixed(1)}M VND';
+    } else if (amount >= 1000) {
+      return '${(amount / 1000).toStringAsFixed(0)}K VND';
+    } else {
+      return '$amount VND';
+    }
   }
 
   List<String> getNextValidStatuses(String currentStatus) {
@@ -160,7 +201,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                             ),
                           ),
                           title: Text(item.title),
-                          subtitle: Text('Giá: ${item.price}đ | SL: ${item.quantity}'),
+                          subtitle: Text('Giá: ${_formatCurrency(item.price)} | SL: ${item.quantity}'),
                         ),
                       ),
 
@@ -183,7 +224,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Text('Tổng tiền:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                          Text('${order!.totalAmount}đ',
+                          Text('${_formatCurrency(order!.totalAmount)}',
                               style: const TextStyle(fontSize: 16, color: Colors.brown, fontWeight: FontWeight.bold)),
                         ],
                       ),

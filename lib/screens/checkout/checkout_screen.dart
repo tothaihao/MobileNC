@@ -819,8 +819,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         updatedAt: order.updatedAt,
       );
 
+      // Convert VND to USD (approximate rate 1 USD = 24,000 VND)
+      final usdAmount = (finalTotal / 24000).toDouble();
+      
       final approvalUrl = await PayPalService.createPayPalPayment(
-        amount: finalTotal,
+        amount: double.parse(usdAmount.toStringAsFixed(2)), // Round to 2 decimal places
         currency: 'USD',
         description: 'Coffee Shop Order Payment',
       );

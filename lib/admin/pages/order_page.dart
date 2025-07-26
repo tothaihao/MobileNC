@@ -33,10 +33,18 @@ class _OrderPageState extends State<OrderPage> {
   Future<void> fetchOrders() async {
     setState(() => isLoading = true);
     try {
-      // Use the correct import for admin/models/order_model.dart
+      print('DEBUG: Fetching orders...');
       orders = await AdminOrderService.getAllOrders();
+      print('DEBUG: Successfully fetched ${orders.length} orders');
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+      print('DEBUG: Error fetching orders: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Lỗi khi tải đơn hàng: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
     } finally {
       setState(() => isLoading = false);
     }
@@ -56,6 +64,33 @@ class _OrderPageState extends State<OrderPage> {
         return Colors.red;
       default:
         return Colors.grey;
+    }
+  }
+
+  String _getStatusLabel(String status) {
+    switch (status) {
+      case 'pending':
+        return 'Chờ xác nhận';
+      case 'confirmed':
+        return 'Đã xác nhận';
+      case 'inShipping':
+        return 'Đang giao';
+      case 'delivered':
+        return 'Hoàn thành';
+      case 'rejected':
+        return 'Đã hủy';
+      default:
+        return status.toUpperCase();
+    }
+  }
+
+  String _formatCurrency(int amount) {
+    if (amount >= 1000000) {
+      return '${(amount / 1000000).toStringAsFixed(1)}M VND';
+    } else if (amount >= 1000) {
+      return '${(amount / 1000).toStringAsFixed(0)}K VND';
+    } else {
+      return '$amount VND';
     }
   }
 
@@ -162,7 +197,7 @@ class _OrderPageState extends State<OrderPage> {
                                                   borderRadius: BorderRadius.circular(8),
                                                 ),
                                                 child: Text(
-                                                  o.orderStatus.toUpperCase(),
+                                                  _getStatusLabel(o.orderStatus),
                                                   style: TextStyle(
                                                     color: _statusColor(o.orderStatus),
                                                     fontWeight: FontWeight.bold,
@@ -172,7 +207,7 @@ class _OrderPageState extends State<OrderPage> {
                                               ),
                                               const Spacer(),
                                               Text(
-                                                '${o.totalAmount}đ',
+                                                _formatCurrency(o.totalAmount),
                                                 style: const TextStyle(
                                                   fontWeight: FontWeight.bold,
                                                   fontSize: 14,

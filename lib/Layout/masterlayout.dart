@@ -113,34 +113,38 @@ class MasterLayout extends StatelessWidget {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.pushNamed(context, '/chatbot');
-        },
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: AppColors.primaryGradient,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.shadowMedium,
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+      floatingActionButton: Padding(
+  padding: const EdgeInsets.only(bottom: 12.0), // đẩy lên
+  child: FloatingActionButton(
+    onPressed: () {
+      Navigator.pushNamed(context, '/chatbot');
+    },
+    backgroundColor: Colors.transparent,
+    elevation: 0,
+    child: Container(
+      decoration: BoxDecoration(
+        gradient: AppColors.primaryGradient,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.shadowMedium,
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-          child: const Center(
-            child: Icon(
-              Icons.chat_bubble_rounded,
-              color: AppColors.white,
-              size: 28,
-            ),
-          ),
+        ],
+      ),
+      child: const Center(
+        child: Icon(
+          Icons.chat_bubble_rounded,
+          color: AppColors.white,
+          size: 28,
         ),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+    ),
+  ),
+),
+floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           gradient: AppColors.primaryGradient,

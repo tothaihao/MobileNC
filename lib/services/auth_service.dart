@@ -107,17 +107,22 @@ class AuthService {
 
   // Lấy user data đã lưu từ SharedPreferences
   Future<Map<String, dynamic>?> getSavedUser() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final userData = prefs.getString('user');
-      if (userData != null) {
-        return json.decode(userData);
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final userData = prefs.getString('user');
+    if (userData != null) {
+      final decoded = json.decode(userData);
+      if (decoded is Map<String, dynamic> && decoded.containsKey('_id')) {
+        return decoded;
       }
-      return null;
-    } catch (e) {
-      return null;
     }
+    // Nếu không có user data hợp lệ, thử lấy từ API
+    return await getCurrentUser();
+  } catch (e) {
+    print('❌ Error getting saved user: $e');
+    return null;
   }
+}
 
   Future<bool> updateUser(String id, String name, String email, String? avatar) async {
     final response = await http.put(
@@ -142,4 +147,7 @@ class AuthService {
     );
     return response.statusCode == 200;
   }
+
+
+  
 } 
