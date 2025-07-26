@@ -13,6 +13,8 @@ import '../../widgets/district_ward_picker.dart';
 import 'package:intl/intl.dart';
 import '../../services/momo_service.dart';
 import '../../services/paypal_service.dart';
+import '../../utils/currency_helper.dart';
+import '../payment/paypal_webview_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({Key? key}) : super(key: key);
@@ -103,7 +105,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 children: [
                   const Text('Tạm tính:', style: TextStyle(fontSize: 16)),
                   Text(
-                    _formatCurrency(cart.totalPrice),
+                    CurrencyHelper.formatVND(cart.totalPrice),
                     style: const TextStyle(fontSize: 16),
                   ),
                 ],
@@ -115,7 +117,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   children: [
                     const Text('Giảm giá:', style: TextStyle(fontSize: 16, color: Colors.green)),
                     Text(
-                      '-${_formatCurrency(voucherProvider.discountAmount)}',
+                      '-${CurrencyHelper.formatVND(voucherProvider.discountAmount)}',
                       style: const TextStyle(fontSize: 16, color: Colors.green),
                     ),
                   ],
@@ -127,7 +129,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 children: [
                   const Text('Tổng cộng:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   Text(
-                    _formatCurrency(_calculateFinalTotal(cart, voucherProvider)),
+                    CurrencyHelper.formatVND(_calculateFinalTotal(cart, voucherProvider)),
                     style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.red),
                   ),
                 ],
@@ -343,7 +345,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         voucherProvider.clearMessages();
                         final success = await voucherProvider.applyVoucher(
                           _voucherController.text, 
-                          cart.totalPrice
+                          cart.totalPrice.toDouble()
                         );
                         if (mounted) {
                           if (success) {
@@ -393,7 +395,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                               style: const TextStyle(fontWeight: FontWeight.bold),
                             ),
                             Text(
-                              'Giảm: ${voucherProvider.discountAmount.toStringAsFixed(0)} VNĐ',
+                              'Giảm: ${CurrencyHelper.formatVND(voucherProvider.discountAmount)}',
                               style: const TextStyle(color: Colors.green),
                             ),
                           ],
@@ -508,7 +510,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
           ),
           Text(
-            _formatCurrency(item.price * item.quantity),
+            CurrencyHelper.formatVND(CurrencyHelper.getEffectivePrice(item.price, item.salePrice) * item.quantity),
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
         ],
@@ -570,7 +572,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         productId: item.productId,
         title: item.title,
         image: item.image,
-        price: item.price,
+        price: CurrencyHelper.getEffectivePrice(item.price, item.salePrice), // Use effective price
         quantity: item.quantity,
       )).toList(),
       totalAmount: finalTotal.toInt(),
@@ -832,18 +834,62 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
       if (approvalUrl != null) {
         // Create order first
-        final success = await context.read<OrderProvider>().createOrder(updatedOrder);
-        if (success && mounted) {
-          // TODO: Open PayPal payment URL in webview
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Chuyển hướng đến PayPal để thanh toán...'),
-              backgroundColor: Colors.blue,
+        final orderSuccess = await context.read<OrderProvider>().createOrder(updatedOrder);
+        
+        if (orderSuccess && mounted) {
+          // Open PayPal WebView
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => PayPalWebViewScreen(
+                approvalUrl: approvalUrl,
+                orderId: updatedOrder.id,
+                amount: double.parse(usdAmount.toStringAsFixed(2)),
+                onPaymentComplete: (success, error) async {
+                  if (success) {
+                    // Payment successful
+                    print('✅ PayPal payment completed successfully');
+                    
+                    // Clear cart and navigate to success
+                    await context.read<CartProvider>().fetchCart(userId);
+                    
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Thanh toán PayPal thành công! 🎉'),
+                          backgroundColor: Colors.green,
+                          duration: Duration(seconds: 3),
+                        ),
+                      );
+                      Navigator.pushReplacementNamed(context, '/success');
+                    }
+                  } else {
+                    // Payment failed
+                    print('❌ PayPal payment failed: $error');
+                    
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(error ?? 'Thanh toán PayPal thất bại!'),
+                          backgroundColor: Colors.red,
+                          duration: const Duration(seconds: 5),
+                        ),
+                      );
+                      
+                      // Show retry option
+                      _showPaymentFailedDialog(error);
+                    }
+                  }
+                },
+              ),
             ),
           );
-          // For now, navigate to success since we can't open webview
-          await context.read<CartProvider>().fetchCart(userId);
-          Navigator.pushReplacementNamed(context, '/success');
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Không thể tạo đơn hàng!'),
+              backgroundColor: Colors.red,
+            ),
+          );
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -864,20 +910,57 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
   }
 
-  // Helper function to format currency
-  String _formatCurrency(dynamic amount) {
-    if (amount == null) return '0 VNĐ';
-    
-    int value;
-    if (amount is double) {
-      value = amount.round();
-    } else if (amount is int) {
-      value = amount;
-    } else {
-      value = int.tryParse(amount.toString()) ?? 0;
-    }
-    
-    final formatter = NumberFormat('#,###');
-    return '${formatter.format(value)} VNĐ';
+  void _showPaymentFailedDialog(String? error) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Thanh toán thất bại'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Không thể hoàn tất thanh toán PayPal.'),
+            if (error != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Chi tiết: $error',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
+            const Text('Bạn có muốn thử lại hoặc chọn phương thức thanh toán khác?'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Hủy'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              setState(() {
+                _selectedPaymentMethod = 'cash';
+              });
+            },
+            child: const Text('Thanh toán khi nhận'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              // Retry PayPal payment
+              final cart = context.read<CartProvider>().cart;
+              if (cart != null) {
+                _placeOrder(cart);
+              }
+            },
+            child: const Text('Thử lại PayPal'),
+          ),
+        ],
+      ),
+    );
   }
 }

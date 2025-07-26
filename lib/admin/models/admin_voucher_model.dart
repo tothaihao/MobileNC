@@ -1,3 +1,6 @@
+import 'package:flutter/material.dart';
+import '../../utils/currency_helper.dart';
+
 class Voucher {
   final String id;
   final String code;
@@ -42,5 +45,24 @@ class Voucher {
       'expiredAt': expiredAt?.toIso8601String(),
       'isActive': isActive,
     };
+  }
+
+  // Helper methods using CurrencyHelper
+  String get displayValue => CurrencyHelper.formatVoucherDiscount(type, value, maxDiscount);
+  
+  String get statusText {
+    if (!isActive) return 'Tạm dừng';
+    if (expiredAt != null && DateTime.now().isAfter(expiredAt!)) return 'Hết hạn';
+    return 'Hoạt động';
+  }
+  
+  Color get statusColor {
+    if (!isActive) return Colors.orange;
+    if (expiredAt != null && DateTime.now().isAfter(expiredAt!)) return Colors.red;
+    return Colors.green;
+  }
+  
+  bool isValidForOrder(double orderTotal) {
+    return CurrencyHelper.isVoucherValidForOrder(orderTotal, minOrderAmount, expiredAt, isActive);
   }
 } 

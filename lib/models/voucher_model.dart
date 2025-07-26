@@ -1,3 +1,5 @@
+import '../utils/currency_helper.dart';
+
 class Voucher {
   final String id;
   final String code;
@@ -47,6 +49,17 @@ class Voucher {
 }
 
 extension VoucherX on Voucher {
-  String get displayValue =>
-      type == 'percent' ? '$value%' : '$value VNĐ';
+  String get displayValue => CurrencyHelper.formatVoucherDiscount(type, value, maxDiscount);
+  
+  bool isValidForOrder(double orderTotal) {
+    return CurrencyHelper.isVoucherValidForOrder(orderTotal, minOrderAmount, expiredAt, isActive);
+  }
+  
+  String? getErrorMessage(double orderTotal) {
+    return CurrencyHelper.getVoucherErrorMessage(orderTotal, minOrderAmount, expiredAt, isActive);
+  }
+  
+  double calculateDiscount(double orderTotal) {
+    return CurrencyHelper.calculateVoucherDiscount(orderTotal, type, value, maxDiscount);
+  }
 }

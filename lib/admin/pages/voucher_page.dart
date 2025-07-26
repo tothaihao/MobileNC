@@ -3,6 +3,7 @@ import '../models/admin_voucher_model.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../config/app_config.dart';
+import '../../utils/currency_helper.dart';
 
 class VoucherPage extends StatefulWidget {
   const VoucherPage({Key? key}) : super(key: key);
@@ -209,7 +210,6 @@ class ModernVoucherCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isActive = voucher.isActive && (voucher.expiredAt == null || voucher.expiredAt!.isAfter(DateTime.now()));
-    final isPercent = voucher.type == 'percent';
     final gradient = isActive
         ? [Colors.green[200]!, Colors.green[50]!]
         : [Colors.grey[300]!, Colors.grey[100]!];
@@ -242,17 +242,13 @@ class ModernVoucherCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: isActive ? Colors.green[100] : Colors.red[100],
+                      color: voucher.statusColor.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      isActive
-                          ? 'Hoạt động'
-                          : (voucher.expiredAt != null && voucher.expiredAt!.isBefore(DateTime.now())
-                              ? 'Hết hạn'
-                              : 'Tạm dừng'),
+                      voucher.statusText,
                       style: TextStyle(
-                        color: isActive ? Colors.green[900] : Colors.red[900],
+                        color: voucher.statusColor,
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),
@@ -267,13 +263,11 @@ class ModernVoucherCard extends StatelessWidget {
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   _infoChip(
-                    isPercent
-                        ? 'Giảm ${voucher.value}% (max ${voucher.maxDiscount}đ)'
-                        : 'Giảm ${voucher.value}đ',
+                    voucher.displayValue,
                     color: Colors.orange[100],
                     textColor: Colors.orange[900],
                   ),
-                  _infoChip('Min Order: ${voucher.minOrderAmount}đ'),
+                  _infoChip('Min Order: ${CurrencyHelper.formatVND(voucher.minOrderAmount)}'),
                   _infoChip('Hạn: ${voucher.expiredAt != null ? _formatDate(voucher.expiredAt!) : ''}'),
                 ],
               ),

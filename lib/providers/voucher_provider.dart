@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/voucher_model.dart';
 import '../services/voucher_service.dart';
+import '../utils/currency_helper.dart';
 
 class VoucherProvider with ChangeNotifier {
   List<Voucher> _vouchers = [];
@@ -9,7 +10,7 @@ class VoucherProvider with ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   String? _successMessage;
-  int _discountAmount = 0;
+  double _discountAmount = 0.0;
 
   List<Voucher> get vouchers => _vouchers;
   Voucher? get checkedVoucher => _checkedVoucher;
@@ -17,7 +18,7 @@ class VoucherProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
   String? get successMessage => _successMessage;
-  int get discountAmount => _discountAmount;
+  double get discountAmount => _discountAmount;
 
   final VoucherService _voucherService = VoucherService();
 
@@ -29,7 +30,7 @@ class VoucherProvider with ChangeNotifier {
 
   void clearAppliedVoucher() {
     _appliedVoucher = null;
-    _discountAmount = 0;
+    _discountAmount = 0.0;
     _successMessage = null;
     notifyListeners();
   }
@@ -73,28 +74,44 @@ class VoucherProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> applyVoucher(String code, int totalAmount) async {
+  Future<bool> applyVoucher(String code, double totalAmount) async {
     _isLoading = true;
     _error = null;
     _successMessage = null;
     notifyListeners();
+    
     try {
-      final result = await _voucherService.applyVoucher(code, totalAmount);
-      if (result['success'] == true) {
-        _appliedVoucher = Voucher.fromJson(result['voucher']);
-        _discountAmount = result['discountAmount'] ?? 0;
-        _successMessage = 'Áp dụng mã giảm giá thành công!';
-        _isLoading = false;
-        notifyListeners();
-        return true;
-      } else {
-        _error = result['message'] ?? 'Không thể áp dụng mã giảm giá';
+      // First check if voucher exists and is valid
+      final voucher = await _voucherService.checkVoucher(code);
+      
+      if (voucher == null) {
+        _error = 'Mã giảm giá không tồn tại';
         _isLoading = false;
         notifyListeners();
         return false;
       }
+      
+      // Validate voucher for this order
+      if (!voucher.isValidForOrder(totalAmount)) {
+        _error = voucher.getErrorMessage(totalAmount) ?? 'Mã giảm giá không hợp lệ';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+      
+      // Calculate discount
+      final discount = voucher.calculateDiscount(totalAmount);
+      
+      _appliedVoucher = voucher;
+      _discountAmount = discount;
+      _successMessage = 'Áp dụng mã giảm giá thành công! Giảm ${CurrencyHelper.formatVND(discount.round())}';
+      _isLoading = false;
+      notifyListeners();
+      return true;
+      
     } catch (e) {
-      _error = e.toString();
+      print('❌ Apply voucher error: $e');
+      _error = 'Lỗi khi áp dụng mã giảm giá: $e';
       _isLoading = false;
       notifyListeners();
       return false;
