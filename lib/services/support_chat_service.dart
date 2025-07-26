@@ -32,7 +32,7 @@ class SupportChatService {
   Future<SupportThread?> sendUserMessage(String userEmail, String userName, String message) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/start'),
+        Uri.parse('$baseUrl/user/message'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'userEmail': userEmail,

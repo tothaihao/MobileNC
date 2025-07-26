@@ -9,7 +9,8 @@ class SupportMessage {
     return SupportMessage(
       sender: json['sender'],
       content: json['content'],
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
+      createdAt: json['timestamp'] != null ? DateTime.parse(json['timestamp']) : 
+                 json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
     );
   }
 
