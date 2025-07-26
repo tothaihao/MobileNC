@@ -7,6 +7,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/address_provider.dart';
 import '../../models/order_model.dart';
 import '../../models/cart_model.dart';
+import '../../models/address_model.dart';
 import '../../theme/colors.dart';
 import '../../widgets/district_ward_picker.dart';
 import 'package:intl/intl.dart';
@@ -31,6 +32,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   String? _selectedWard;
   String? _selectedAddressId;
   String? _selectedPaymentMethod = 'cash';
+  bool _useSavedAddress = true;
+  bool _saveNewAddress = false;
+  String _city = 'TP. Hồ Chí Minh'; // Default city
 
   @override
   void initState() {
@@ -40,9 +44,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       if (user != null) {
         context.read<CartProvider>().fetchCart(user.id);
         context.read<VoucherProvider>().fetchVouchers();
-        context.read<AddressProvider>().fetchAddresses(user.id); // Fetch addresses for dropdown
+        context.read<AddressProvider>().fetchAddresses(user.id);
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _addressController.dispose();
+    _phoneController.dispose();
+    _noteController.dispose();
+    _voucherController.dispose();
+    super.dispose();
   }
 
   @override
@@ -126,15 +139,70 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
+              
+              // Toggle between saved addresses and new address
               Consumer<AddressProvider>(
                 builder: (context, addressProvider, _) {
                   final addresses = addressProvider.addresses;
-                  return DropdownButtonFormField<String>(
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Toggle buttons
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: addresses.isNotEmpty ? () {
+                                setState(() {
+                                  _useSavedAddress = true;
+                                  _selectedAddressId = null;
+                                  _clearAddressFields();
+                                });
+                              } : null,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: _useSavedAddress ? AppColors.primary : Colors.grey[300],
+                                foregroundColor: _useSavedAddress ? Colors.white : Colors.grey[600],
+                              ),
+                              child: Text('Địa chỉ đã lưu (${addresses.length})'),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () {
+                                setState(() {
+                                  _useSavedAddress = false;
+                                  _selectedAddressId = null;
+                                  _clearAddressFields();
+                                });
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: !_useSavedAddress ? AppColors.primary : Colors.grey[300],
+                                foregroundColor: !_useSavedAddress ? Colors.white : Colors.grey[600],
+                              ),
+                              child: const Text('Địa chỉ mới'),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      // Address selection/input based on toggle
+                      if (_useSavedAddress && addresses.isNotEmpty) ...[
+                        // Dropdown for saved addresses
+                        DropdownButtonFormField<String>(
                     value: _selectedAddressId,
                     hint: const Text('Chọn địa chỉ đã lưu'),
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          ),
                     items: addresses.map((address) => DropdownMenuItem(
                       value: address.id,
-                      child: Text('${address.streetAddress}, ${address.ward}, ${address.district}, ${address.city}'),
+                            child: Text(
+                              '${address.streetAddress}, ${address.ward}, ${address.district}, ${address.city}',
+                              overflow: TextOverflow.ellipsis,
+                            ),
                     )).toList(),
                     onChanged: (value) {
                       setState(() {
@@ -145,56 +213,108 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           _selectedDistrict = selected.district;
                           _selectedWard = selected.ward;
                           _phoneController.text = selected.phone;
+                                _city = selected.city;
                         }
                       });
                     },
                     validator: (value) => value == null ? 'Vui lòng chọn địa chỉ giao hàng' : null,
-                  );
-                },
               ),
               const SizedBox(height: 16),
-              // Ẩn các trường nhập địa chỉ chi tiết, quận, phường, số điện thoại (chỉ hiển thị, không cho sửa)
+                        // Show selected address details (editable)
+                        if (_selectedAddressId != null) ...[
+                          const Text(
+                            'Thông tin địa chỉ (có thể chỉnh sửa):',
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                      ],
+                      
+                      // Address input fields (always visible when not using saved address or when editing)
+                      if (!_useSavedAddress || _selectedAddressId != null) ...[
               TextFormField(
                 controller: _addressController,
                 decoration: const InputDecoration(
-                  labelText: 'Địa chỉ chi tiết',
+                            labelText: 'Địa chỉ chi tiết *',
                   border: OutlineInputBorder(),
-                ),
-                enabled: false,
-              ),
-              const SizedBox(height: 8),
+                            hintText: 'Ví dụ: 123 Đường ABC, Phường XYZ',
+                          ),
+                          validator: (value) => value?.trim().isEmpty == true ? 'Vui lòng nhập địa chỉ chi tiết' : null,
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        DistrictWardPicker(
+                          initialDistrict: _selectedDistrict,
+                          initialWard: _selectedWard,
+                          onChanged: (district, ward) {
+                            setState(() {
+                              _selectedDistrict = district;
+                              _selectedWard = ward;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        
               TextFormField(
-                initialValue: _selectedDistrict,
+                          initialValue: _city,
                 decoration: const InputDecoration(
-                  labelText: 'Quận/Huyện',
+                            labelText: 'Tỉnh/Thành phố *',
                   border: OutlineInputBorder(),
                 ),
-                enabled: false,
+                          onChanged: (value) => _city = value,
+                          validator: (value) => value?.trim().isEmpty == true ? 'Vui lòng nhập tỉnh/thành phố' : null,
               ),
-              const SizedBox(height: 8),
-              TextFormField(
-                initialValue: _selectedWard,
-                decoration: const InputDecoration(
-                  labelText: 'Phường/Xã',
-                  border: OutlineInputBorder(),
-                ),
-                enabled: false,
-              ),
-              const SizedBox(height: 8),
+                        const SizedBox(height: 16),
+                        
               TextFormField(
                 controller: _phoneController,
                 decoration: const InputDecoration(
-                  labelText: 'Số điện thoại',
+                            labelText: 'Số điện thoại *',
                   border: OutlineInputBorder(),
-                ),
-                enabled: false,
+                            hintText: 'Ví dụ: 0123456789',
+                          ),
+                          keyboardType: TextInputType.phone,
+                          validator: (value) {
+                            if (value?.trim().isEmpty == true) {
+                              return 'Vui lòng nhập số điện thoại';
+                            }
+                            if (value != null && !RegExp(r'^[0-9]{10,11}$').hasMatch(value.trim())) {
+                              return 'Số điện thoại không hợp lệ';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                      
+                      // Option to save new address
+                      if (!_useSavedAddress) ...[
+                        Row(
+                          children: [
+                            Checkbox(
+                              value: _saveNewAddress,
+                              onChanged: (value) {
+                                setState(() {
+                                  _saveNewAddress = value ?? false;
+                                });
+                              },
+                            ),
+                            const Text('Lưu địa chỉ này cho lần sau'),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    ],
+                  );
+                },
               ),
-              const SizedBox(height: 16),
+              
               TextFormField(
                 controller: _noteController,
                 decoration: const InputDecoration(
                   labelText: 'Ghi chú (tùy chọn)',
                   border: OutlineInputBorder(),
+                  hintText: 'Hướng dẫn giao hàng, thời gian nhận hàng...',
                 ),
                 maxLines: 3,
               ),
@@ -328,11 +448,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   ),
                 ],
               ),
+              const SizedBox(height: 24),
               // Place Order Button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () => _placeOrder(cart),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                   child: const Text('Đặt hàng'),
                 ),
               ),
@@ -341,6 +468,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         ),
       ),
     );
+  }
+
+  void _clearAddressFields() {
+    _addressController.clear();
+    _phoneController.clear();
+    _selectedDistrict = null;
+    _selectedWard = null;
+    _city = 'TP. Hồ Chí Minh';
   }
 
   Widget _buildOrderItem(CartItem item) {
@@ -391,17 +526,42 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   void _placeOrder(Cart cart) async {
     if (!_formKey.currentState!.validate()) return;
-    if (_selectedAddressId == null) {
+    
+    // Validate address fields
+    if (_useSavedAddress && _selectedAddressId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Vui lòng chọn địa chỉ giao hàng!'), backgroundColor: Colors.red),
       );
       return;
+    }
+    
+    if (!_useSavedAddress) {
+      if (_addressController.text.trim().isEmpty || 
+          _selectedDistrict == null || 
+          _selectedWard == null || 
+          _city.trim().isEmpty || 
+          _phoneController.text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Vui lòng điền đầy đủ thông tin địa chỉ!'), backgroundColor: Colors.red),
+        );
+        return;
+      }
     }
 
     final user = context.read<AuthProvider>().user!;
     final voucherProvider = context.read<VoucherProvider>();
     final String? voucherCode = voucherProvider.appliedVoucher?.code;
     final finalTotal = _calculateFinalTotal(cart, voucherProvider);
+    
+    // Determine addressId for order
+    String? orderAddressId;
+    if (_useSavedAddress && _selectedAddressId != null) {
+      orderAddressId = _selectedAddressId;
+    } else {
+      // For new addresses, we'll save them first and get the ID
+      // This will be handled in the payment processing methods
+      orderAddressId = null; // Will be set after saving address
+    }
     
     final order = Order(
       id: '',
@@ -415,8 +575,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       )).toList(),
       totalAmount: finalTotal.toInt(),
       orderStatus: 'pending',
-      addressId: _selectedAddressId,
-      address: null,
+      addressId: orderAddressId,
       voucherCode: voucherCode,
       paymentMethod: _selectedPaymentMethod ?? 'cash',
       paymentStatus: 'pending',
@@ -439,7 +598,54 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       builder: (context) => const Center(child: CircularProgressIndicator()),
     );
 
-    final success = await context.read<OrderProvider>().createOrder(order);
+    try {
+      String? finalAddressId = order.addressId;
+      
+      // If using new address, save it first and get the ID
+      if (!_useSavedAddress) {
+        final newAddress = Address(
+          id: '',
+          userId: userId,
+          streetAddress: _addressController.text.trim(),
+          ward: _selectedWard!,
+          district: _selectedDistrict!,
+          city: _city.trim(),
+          phone: _phoneController.text.trim(),
+          notes: _noteController.text.trim().isNotEmpty ? _noteController.text.trim() : null,
+        );
+        
+        final addressProvider = context.read<AddressProvider>();
+        final success = await addressProvider.addAddress(newAddress);
+        
+        if (success) {
+          // Refresh addresses to get the new address ID
+          await addressProvider.fetchAddresses(userId);
+          // Find the newly added address (should be the last one)
+          if (addressProvider.addresses.isNotEmpty) {
+            finalAddressId = addressProvider.addresses.last.id;
+          }
+        } else {
+          throw Exception('Không thể lưu địa chỉ mới');
+        }
+      }
+      
+      // Update order with the final addressId
+      final updatedOrder = Order(
+        id: order.id,
+        userId: order.userId,
+        cartItems: order.cartItems,
+        totalAmount: order.totalAmount,
+        orderStatus: order.orderStatus,
+        addressId: finalAddressId,
+        voucherCode: order.voucherCode,
+        paymentMethod: order.paymentMethod,
+        paymentStatus: order.paymentStatus,
+        orderDate: order.orderDate,
+        createdAt: order.createdAt,
+        updatedAt: order.updatedAt,
+      );
+
+      final success = await context.read<OrderProvider>().createOrder(updatedOrder);
     Navigator.of(context).pop(); // Close loading
 
     if (success && mounted) {
@@ -449,6 +655,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Đặt hàng thất bại!'), backgroundColor: Colors.red),
       );
+      }
+    } catch (e) {
+      Navigator.of(context).pop();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -460,6 +677,52 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
 
     try {
+      String? finalAddressId = order.addressId;
+      
+      // If using new address, save it first and get the ID
+      if (!_useSavedAddress) {
+        final newAddress = Address(
+          id: '',
+          userId: userId,
+          streetAddress: _addressController.text.trim(),
+          ward: _selectedWard!,
+          district: _selectedDistrict!,
+          city: _city.trim(),
+          phone: _phoneController.text.trim(),
+          notes: _noteController.text.trim().isNotEmpty ? _noteController.text.trim() : null,
+        );
+        
+        final addressProvider = context.read<AddressProvider>();
+        final success = await addressProvider.addAddress(newAddress);
+        
+        if (success) {
+          // Refresh addresses to get the new address ID
+          await addressProvider.fetchAddresses(userId);
+          // Find the newly added address (should be the last one)
+          if (addressProvider.addresses.isNotEmpty) {
+            finalAddressId = addressProvider.addresses.last.id;
+          }
+        } else {
+          throw Exception('Không thể lưu địa chỉ mới');
+        }
+      }
+      
+      // Update order with the final addressId
+      final updatedOrder = Order(
+        id: order.id,
+        userId: order.userId,
+        cartItems: order.cartItems,
+        totalAmount: order.totalAmount,
+        orderStatus: order.orderStatus,
+        addressId: finalAddressId,
+        voucherCode: order.voucherCode,
+        paymentMethod: order.paymentMethod,
+        paymentStatus: order.paymentStatus,
+        orderDate: order.orderDate,
+        createdAt: order.createdAt,
+        updatedAt: order.updatedAt,
+      );
+
       final payUrl = await MomoService.createMomoPayment(
         amount: finalTotal.toInt(),
         orderInfo: 'Thanh toán đơn hàng #${DateTime.now().millisecondsSinceEpoch}',
@@ -470,7 +733,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
       if (payUrl != null) {
         // Create order first
-        final success = await context.read<OrderProvider>().createOrder(order);
+        final success = await context.read<OrderProvider>().createOrder(updatedOrder);
         if (success && mounted) {
           // TODO: Open MoMo payment URL in webview or external browser
           ScaffoldMessenger.of(context).showSnackBar(
@@ -510,6 +773,52 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
 
     try {
+      String? finalAddressId = order.addressId;
+      
+      // If using new address, save it first and get the ID
+      if (!_useSavedAddress) {
+        final newAddress = Address(
+          id: '',
+          userId: userId,
+          streetAddress: _addressController.text.trim(),
+          ward: _selectedWard!,
+          district: _selectedDistrict!,
+          city: _city.trim(),
+          phone: _phoneController.text.trim(),
+          notes: _noteController.text.trim().isNotEmpty ? _noteController.text.trim() : null,
+        );
+        
+        final addressProvider = context.read<AddressProvider>();
+        final success = await addressProvider.addAddress(newAddress);
+        
+        if (success) {
+          // Refresh addresses to get the new address ID
+          await addressProvider.fetchAddresses(userId);
+          // Find the newly added address (should be the last one)
+          if (addressProvider.addresses.isNotEmpty) {
+            finalAddressId = addressProvider.addresses.last.id;
+          }
+        } else {
+          throw Exception('Không thể lưu địa chỉ mới');
+        }
+      }
+      
+      // Update order with the final addressId
+      final updatedOrder = Order(
+        id: order.id,
+        userId: order.userId,
+        cartItems: order.cartItems,
+        totalAmount: order.totalAmount,
+        orderStatus: order.orderStatus,
+        addressId: finalAddressId,
+        voucherCode: order.voucherCode,
+        paymentMethod: order.paymentMethod,
+        paymentStatus: order.paymentStatus,
+        orderDate: order.orderDate,
+        createdAt: order.createdAt,
+        updatedAt: order.updatedAt,
+      );
+
       final approvalUrl = await PayPalService.createPayPalPayment(
         amount: finalTotal,
         currency: 'USD',
@@ -520,7 +829,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
       if (approvalUrl != null) {
         // Create order first
-        final success = await context.read<OrderProvider>().createOrder(order);
+        final success = await context.read<OrderProvider>().createOrder(updatedOrder);
         if (success && mounted) {
           // TODO: Open PayPal payment URL in webview
           ScaffoldMessenger.of(context).showSnackBar(

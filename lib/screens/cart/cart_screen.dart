@@ -71,9 +71,7 @@ class _CartScreenState extends State<CartScreen> {
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                               ),
                               onPressed: () {
-                                if (user != null) {
-                                  context.read<CartProvider>().fetchCart(user.id);
-                                }
+                                context.read<CartProvider>().fetchCart(user.id);
                               },
                               icon: const Icon(Icons.refresh),
                               label: const Text('Tải lại giỏ hàng'),
@@ -98,9 +96,7 @@ class _CartScreenState extends State<CartScreen> {
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                 ),
                                 onPressed: () {
-                                  if (user != null) {
-                                    context.read<CartProvider>().fetchCart(user.id);
-                                  }
+                                  context.read<CartProvider>().fetchCart(user.id);
                                 },
                                 icon: const Icon(Icons.refresh),
                                 label: const Text('Tải lại giỏ hàng'),
@@ -285,15 +281,5 @@ class _CartScreenState extends State<CartScreen> {
         ],
       ),
     );
-  }
-
-  String _getFriendlyError(String? error) {
-    if (error == null) return 'Đã xảy ra lỗi không xác định.';
-    if (error.contains('Network')) return 'Không thể kết nối tới máy chủ. Vui lòng kiểm tra mạng.';
-    if (error.contains('500') || error.contains('server')) return 'Lỗi máy chủ. Vui lòng thử lại sau.';
-    if (error.contains('Product not found')) return 'Sản phẩm trong giỏ không còn tồn tại.';
-    if (error.contains('Cart not found')) return 'Giỏ hàng của bạn chưa có sản phẩm nào.';
-    if (error.contains('Invalid data')) return 'Dữ liệu gửi lên không hợp lệ.';
-    return error;
   }
 } 

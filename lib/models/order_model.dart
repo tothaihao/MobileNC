@@ -1,3 +1,5 @@
+import 'address_model.dart';
+
 class OrderItem {
   final String productId;
   final String title;
@@ -40,14 +42,13 @@ class Order {
   final List<OrderItem> cartItems;
   final int totalAmount;
   final String orderStatus;
-  final String? addressId;
+  final String? addressId; // For saved addresses
   final String? voucherCode;
   final String? paymentMethod;
   final String? paymentStatus;
   final DateTime? orderDate;
   final DateTime? createdAt;
   final DateTime? updatedAt;
-  final String? address;
 
   Order({
     required this.id,
@@ -56,7 +57,6 @@ class Order {
     required this.totalAmount,
     required this.orderStatus,
     this.addressId,
-    this.address,
     this.voucherCode,
     required this.paymentMethod,
     required this.paymentStatus,
@@ -81,7 +81,6 @@ class Order {
       totalAmount: (json['totalAmount'] is int) ? json['totalAmount'] : int.tryParse(json['totalAmount']?.toString() ?? '0') ?? 0,
       orderStatus: json['orderStatus']?.toString() ?? '',
       addressId: json['addressId']?.toString(),
-      address: _parseAddress(json['address']),
       voucherCode: json['voucherCode']?.toString(),
       paymentMethod: json['paymentMethod']?.toString() ?? '',
       paymentStatus: json['paymentStatus']?.toString() ?? '',
@@ -89,20 +88,6 @@ class Order {
       createdAt: json['createdAt'] != null ? DateTime.tryParse(json['createdAt'].toString()) : null,
       updatedAt: json['updatedAt'] != null ? DateTime.tryParse(json['updatedAt'].toString()) : null,
     );
-  }
-
-  static String? _parseAddress(dynamic addressData) {
-    if (addressData == null) return null;
-    if (addressData is String) return addressData;
-    if (addressData is Map<String, dynamic>) {
-      // If address is an object, try to construct a string from it
-      String addr = '';
-      if (addressData['street'] != null) addr += addressData['street'].toString();
-      if (addressData['district'] != null) addr += ', ${addressData['district']}';
-      if (addressData['city'] != null) addr += ', ${addressData['city']}';
-      return addr.isNotEmpty ? addr : null;
-    }
-    return addressData.toString();
   }
 
   Map<String, dynamic> toJson() {
@@ -113,7 +98,6 @@ class Order {
       'totalAmount': totalAmount,
       'orderStatus': orderStatus,
       'addressId': addressId,
-      'address': address,
       'voucherCode': voucherCode,
       'paymentMethod': paymentMethod,
       'paymentStatus': paymentStatus,

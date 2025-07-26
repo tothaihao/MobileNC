@@ -12,6 +12,7 @@ import 'providers/address_provider.dart';
 import 'providers/favorites_provider.dart';
 import 'providers/support_request_provider.dart';
 import 'providers/support_chat_provider.dart';
+import 'providers/admin_support_chat_provider.dart';
 import 'providers/feature_provider.dart';
 
 // Screens
@@ -83,6 +84,7 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (_) => FavoritesProvider()),
         ChangeNotifierProvider(create: (_) => SupportRequestProvider()),
         ChangeNotifierProvider(create: (_) => SupportChatProvider()),
+        ChangeNotifierProvider(create: (_) => AdminSupportChatProvider()),
         ChangeNotifierProvider(create: (_) => FeatureProvider()),
       ],
       child: MaterialApp(
