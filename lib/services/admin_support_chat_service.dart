@@ -10,7 +10,7 @@ class AdminSupportChatService {
   Future<List<SupportThread>> getAllThreads() async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/all'),
+        Uri.parse('$baseUrl/admin/threads'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -29,7 +29,7 @@ class AdminSupportChatService {
   Future<SupportThread?> sendAdminMessage(String threadId, String message) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/$threadId/message'),
+        Uri.parse('$baseUrl/admin/$threadId/message'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'content': message}),
       );
@@ -49,7 +49,7 @@ class AdminSupportChatService {
   Future<SupportThread?> getThreadById(String threadId) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/thread/$threadId'),
+        Uri.parse('$baseUrl/admin/$threadId'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -92,8 +92,8 @@ class AdminSupportChatService {
   Future<bool> markThreadAsRead(String threadId) async {
     try {
       // Backend endpoint cần được thêm vào cho chức năng này
-      final response = await http.patch(
-        Uri.parse('$baseUrl/thread/$threadId/read'),
+      final response = await http.put(
+        Uri.parse('$baseUrl/admin/$threadId/read'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -107,7 +107,7 @@ class AdminSupportChatService {
   Future<Map<String, dynamic>> getChatStats() async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/stats'),
+        Uri.parse('$baseUrl/admin/stats'),
         headers: {'Content-Type': 'application/json'},
       );
 

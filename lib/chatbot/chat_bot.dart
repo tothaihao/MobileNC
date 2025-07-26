@@ -6,6 +6,7 @@ import 'package:do_an_mobile_nc/models/voucher_model.dart';
 import 'package:do_an_mobile_nc/models/order_model.dart';
 import 'package:do_an_mobile_nc/screens/product/product_detail_screen.dart';
 import 'package:cached_network_image/cached_network_image.dart'; // Thêm package này
+import 'package:do_an_mobile_nc/theme/colors.dart';
 
 class ChatbotScreen extends StatefulWidget {
   const ChatbotScreen({Key? key}) : super(key: key);
@@ -496,15 +497,19 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     switch (category?.toLowerCase()) {
       case 'caphe':
       case 'cà phê':
+      case 'buồn ngủ quá':
         return Icons.coffee;
       case 'trasua':
       case 'trà sữa':
+      case 'trà':
         return Icons.local_cafe;
       case 'banhngot':
       case 'bánh ngọt':
+      case 'đói bụng quá':
         return Icons.cake;
       case 'daxay':
       case 'đá xay':
+      case 'nóng quá':
         return Icons.ac_unit;
       default:
         return Icons.local_drink;
@@ -617,7 +622,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Chatbot'),
-        backgroundColor: Colors.brown[100],
+        backgroundColor: AppColors.primary,
         elevation: 2,
       ),
       body: Column(

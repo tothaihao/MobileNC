@@ -43,8 +43,16 @@ class _AddressScreenState extends State<AddressScreen> {
                   itemBuilder: (context, index) {
                     final address = addressProvider.addresses[index];
                     return ListTile(
-                      title: Text('${address.streetAddress}, ${address.ward}, ${address.district}, ${address.city}'),
-                      subtitle: Text('SĐT: ${address.phone}${address.notes != null ? '\nGhi chú: ${address.notes}' : ''}'),
+                      title: Text(
+                        '${address.streetAddress}, ${address.ward}, ${address.district}, ${address.city}',
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                      subtitle: Text(
+                        'SĐT: ${address.phone}${address.notes != null ? '\nGhi chú: ${address.notes}' : ''}',
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
+                      ),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -107,6 +115,7 @@ class _AddressScreenState extends State<AddressScreen> {
               TextField(
                 controller: streetController,
                 decoration: const InputDecoration(labelText: 'Địa chỉ'),
+                maxLines: 1,
               ),
               DistrictWardPicker(
                 initialDistrict: selectedDistrict,
@@ -118,18 +127,26 @@ class _AddressScreenState extends State<AddressScreen> {
                   wardController.text = ward;
                 },
               ),
+              TextFormField(
+                controller: districtController,
+                decoration: const InputDecoration(labelText: 'Quận/Huyện'),
+                maxLines: 1,
+              ),
               TextField(
                 controller: cityController,
                 decoration: const InputDecoration(labelText: 'Tỉnh/Thành phố'),
+                maxLines: 1,
               ),
               TextField(
                 controller: phoneController,
                 decoration: const InputDecoration(labelText: 'Số điện thoại'),
+                maxLines: 1,
                 keyboardType: TextInputType.phone,
               ),
               TextField(
                 controller: notesController,
                 decoration: const InputDecoration(labelText: 'Ghi chú (tuỳ chọn)'),
+                maxLines: 2,
               ),
             ],
           ),
@@ -163,4 +180,4 @@ class _AddressScreenState extends State<AddressScreen> {
       ),
     );
   }
-} 
+}

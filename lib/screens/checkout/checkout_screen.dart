@@ -128,9 +128,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text('Tổng cộng:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  Text(
-                    CurrencyHelper.formatVND(_calculateFinalTotal(cart, voucherProvider)),
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.red),
+                  Expanded(
+                    child: Text(
+                      CurrencyHelper.formatVND(_calculateFinalTotal(cart, voucherProvider)),
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.red),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      softWrap: true,
+                      textAlign: TextAlign.right,
+                    ),
                   ),
                 ],
               ),
@@ -204,6 +210,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             child: Text(
                               '${address.streetAddress}, ${address.ward}, ${address.district}, ${address.city}',
                               overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
                             ),
                     )).toList(),
                     onChanged: (value) {
@@ -237,12 +244,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               TextFormField(
                 controller: _addressController,
                 decoration: const InputDecoration(
-                            labelText: 'Địa chỉ chi tiết *',
+                  labelText: 'Địa chỉ chi tiết *',
                   border: OutlineInputBorder(),
-                            hintText: 'Ví dụ: 123 Đường ABC, Phường XYZ',
-                          ),
-                          validator: (value) => value?.trim().isEmpty == true ? 'Vui lòng nhập địa chỉ chi tiết' : null,
-                        ),
+                  hintText: 'Ví dụ: 123 Đường ABC, Phường XYZ',
+                ),
+                maxLines: 1,
+                validator: (value) => value?.trim().isEmpty == true ? 'Vui lòng nhập địa chỉ chi tiết' : null,
+              ),
                         const SizedBox(height: 16),
                         
                         DistrictWardPicker(
@@ -258,34 +266,36 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         const SizedBox(height: 16),
                         
               TextFormField(
-                          initialValue: _city,
+                initialValue: _city,
                 decoration: const InputDecoration(
-                            labelText: 'Tỉnh/Thành phố *',
+                  labelText: 'Tỉnh/Thành phố *',
                   border: OutlineInputBorder(),
                 ),
-                          onChanged: (value) => _city = value,
-                          validator: (value) => value?.trim().isEmpty == true ? 'Vui lòng nhập tỉnh/thành phố' : null,
+                maxLines: 1,
+                onChanged: (value) => _city = value,
+                validator: (value) => value?.trim().isEmpty == true ? 'Vui lòng nhập tỉnh/thành phố' : null,
               ),
                         const SizedBox(height: 16),
                         
               TextFormField(
                 controller: _phoneController,
                 decoration: const InputDecoration(
-                            labelText: 'Số điện thoại *',
+                  labelText: 'Số điện thoại *',
                   border: OutlineInputBorder(),
-                            hintText: 'Ví dụ: 0123456789',
-                          ),
-                          keyboardType: TextInputType.phone,
-                          validator: (value) {
-                            if (value?.trim().isEmpty == true) {
-                              return 'Vui lòng nhập số điện thoại';
-                            }
-                            if (value != null && !RegExp(r'^[0-9]{10,11}$').hasMatch(value.trim())) {
-                              return 'Số điện thoại không hợp lệ';
-                            }
-                            return null;
-                          },
-                        ),
+                  hintText: 'Ví dụ: 0123456789',
+                ),
+                maxLines: 1,
+                keyboardType: TextInputType.phone,
+                validator: (value) {
+                  if (value?.trim().isEmpty == true) {
+                    return 'Vui lòng nhập số điện thoại';
+                  }
+                  if (value != null && !RegExp(r'^[0-9]{10,11}$').hasMatch(value.trim())) {
+                    return 'Số điện thoại không hợp lệ';
+                  }
+                  return null;
+                },
+              ),
                         const SizedBox(height: 16),
                       ],
                       
@@ -318,7 +328,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   border: OutlineInputBorder(),
                   hintText: 'Hướng dẫn giao hàng, thời gian nhận hàng...',
                 ),
-                maxLines: 3,
+                maxLines: 2,
               ),
               const SizedBox(height: 24),
               // Voucher Section

@@ -60,6 +60,6 @@ class AppConfig {
   // Common
   static String get feature => '$baseUrl/common/feature';
   static String get payment => '$baseUrl/common/payment';
-  static String get supportRequest => '$baseUrl/supportRequest';
-  static String get supportChat => '$baseUrl/supportChat';
+  static String get supportRequest => '$baseUrl/common/supportRequest';
+  static String get supportChat => '$baseUrl/common/supportChat';
 }
