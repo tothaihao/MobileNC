@@ -70,29 +70,89 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildBanner() {
     final featureProvider = Provider.of<FeatureProvider>(context);
+    
     if (featureProvider.isLoading) {
       return const SizedBox(
         height: 180,
         child: Center(child: CircularProgressIndicator()),
       );
     }
+    
+    if (featureProvider.error != null) {
+      print('DEBUG: Banner error: ${featureProvider.error}');
+      return SizedBox(
+        height: 180,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, color: Colors.grey, size: 48),
+              SizedBox(height: 8),
+              Text(
+                'Không thể tải banner',
+                style: TextStyle(color: Colors.grey),
+              ),
+              TextButton(
+                onPressed: () {
+                  Provider.of<FeatureProvider>(context, listen: false).fetchBanners();
+                },
+                child: Text('Thử lại'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
     final banners = featureProvider.banners;
+    print('DEBUG: Number of banners: ${banners.length}');
+    
     if (banners.isEmpty) {
       return const SizedBox(
         height: 180,
         child: Center(child: Text('Không có banner nào')),
       );
     }
+    
     return cs.CarouselSlider(
       options: cs.CarouselOptions(height: 180.0, autoPlay: true),
       items: banners.map((banner) {
+        print('DEBUG: Banner image URL: ${banner.image}');
         return Builder(
           builder: (BuildContext context) {
             return Container(
               width: MediaQuery.of(context).size.width,
               margin: const EdgeInsets.symmetric(horizontal: 5.0),
-              decoration: BoxDecoration(color: Colors.amber),
-              child: Image.network(banner.image, fit: BoxFit.cover),
+              decoration: BoxDecoration(
+                color: Colors.amber,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  banner.image,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    print('DEBUG: Error loading banner image: $error');
+                    return Container(
+                      color: Colors.grey[300],
+                      child: Center(
+                        child: Icon(Icons.image_not_supported, size: 48, color: Colors.grey),
+                      ),
+                    );
+                  },
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Center(
+                      child: CircularProgressIndicator(
+                        value: loadingProgress.expectedTotalBytes != null
+                            ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                            : null,
+                      ),
+                    );
+                  },
+                ),
+              ),
             );
           },
         );
@@ -318,16 +378,29 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return MasterLayout(
       currentIndex: 0,
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildBanner(),
-            if (!isLoading) _buildSectionWithFilter(context, 'Ưu đãi hot'),
-            if (!isLoading) _buildProductSlider(context, hotDealProducts, true),
-            if (!isLoading) _buildSectionWithFilter(context, 'Tất cả sản phẩm'),
-            if (!isLoading) _buildProductSlider(context, allProducts, false),
-          ],
+      child: RefreshIndicator(
+        onRefresh: () async {
+          await fetchProducts();
+          await Provider.of<FeatureProvider>(context, listen: false).fetchBanners();
+        },
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildBanner(),
+              if (isLoading)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(50),
+                    child: CircularProgressIndicator(),
+                  ),
+                ),
+              if (!isLoading) _buildSectionWithFilter(context, 'Ưu đãi hot'),
+              if (!isLoading) _buildProductSlider(context, hotDealProducts, true),
+              if (!isLoading) _buildSectionWithFilter(context, 'Tất cả sản phẩm'),
+              if (!isLoading) _buildProductSlider(context, allProducts, false),
+            ],
+          ),
         ),
       ),
     );
