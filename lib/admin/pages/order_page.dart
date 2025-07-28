@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'order_detail_page.dart';
 import 'user_page.dart';
+import 'user_detail_page.dart';
 import 'package:do_an_mobile_nc/admin/models/admin_order_model.dart';
 import 'package:do_an_mobile_nc/admin/services/admin_order_service.dart';
 import 'package:http/http.dart' as http;
@@ -26,6 +27,13 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
   late TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
 
+  // 🔧 NEW: Advanced filtering options
+  String sortBy = 'date_desc'; // date_desc, date_asc, amount_desc, amount_asc
+  DateTimeRange? dateRange;
+  String selectedPaymentMethod = 'all';
+  double? minAmount;
+  double? maxAmount;
+
   final List<Map<String, String>> statusList = [
     {'key': 'all', 'label': 'Tất cả'},
     {'key': 'pending', 'label': 'Chờ xác nhận'},
@@ -33,6 +41,21 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
     {'key': 'inShipping', 'label': 'Đang giao'},
     {'key': 'delivered', 'label': 'Hoàn thành'},
     {'key': 'rejected', 'label': 'Đã hủy'},
+  ];
+
+  final List<Map<String, String>> sortOptions = [
+    {'key': 'date_desc', 'label': 'Ngày mới nhất'},
+    {'key': 'date_asc', 'label': 'Ngày cũ nhất'},
+    {'key': 'amount_desc', 'label': 'Giá trị cao nhất'},
+    {'key': 'amount_asc', 'label': 'Giá trị thấp nhất'},
+    {'key': 'user_name', 'label': 'Tên khách hàng A-Z'},
+  ];
+
+  final List<Map<String, String>> paymentMethods = [
+    {'key': 'all', 'label': 'Tất cả phương thức'},
+    {'key': 'cash', 'label': 'Thanh toán khi nhận'},
+    {'key': 'momo', 'label': 'MoMo'},
+    {'key': 'paypal', 'label': 'PayPal'},
   ];
 
   @override
@@ -143,7 +166,29 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
       result = result.where((order) => order.userId == selectedUserId).toList();
     }
 
-    // Filter by search query (user name)
+    // 🔧 NEW: Filter by payment method
+    if (selectedPaymentMethod != 'all') {
+      result = result.where((order) => order.paymentMethod == selectedPaymentMethod).toList();
+    }
+
+    // 🔧 NEW: Filter by date range
+    if (dateRange != null) {
+      result = result.where((order) {
+        final orderDate = order.orderDate;
+        return orderDate.isAfter(dateRange!.start.subtract(const Duration(days: 1))) &&
+               orderDate.isBefore(dateRange!.end.add(const Duration(days: 1)));
+      }).toList();
+    }
+
+    // 🔧 NEW: Filter by amount range
+    if (minAmount != null) {
+      result = result.where((order) => order.totalAmount >= minAmount!).toList();
+    }
+    if (maxAmount != null) {
+      result = result.where((order) => order.totalAmount <= maxAmount!).toList();
+    }
+
+    // Filter by search query (user name, email, order id)
     if (searchQuery.isNotEmpty) {
       result = result.where((order) {
         final user = users[order.userId];
@@ -156,9 +201,37 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
       }).toList();
     }
 
+    // 🔧 NEW: Apply sorting
+    _applySorting(result);
+
     setState(() {
       filteredOrders = result;
     });
+  }
+
+  // 🔧 NEW: Smart sorting method
+  void _applySorting(List<Order> orders) {
+    switch (sortBy) {
+      case 'date_desc':
+        orders.sort((a, b) => b.orderDate.compareTo(a.orderDate));
+        break;
+      case 'date_asc':
+        orders.sort((a, b) => a.orderDate.compareTo(b.orderDate));
+        break;
+      case 'amount_desc':
+        orders.sort((a, b) => b.totalAmount.compareTo(a.totalAmount));
+        break;
+      case 'amount_asc':
+        orders.sort((a, b) => a.totalAmount.compareTo(b.totalAmount));
+        break;
+      case 'user_name':
+        orders.sort((a, b) {
+          final userA = users[a.userId]?.userName ?? '';
+          final userB = users[b.userId]?.userName ?? '';
+          return userA.compareTo(userB);
+        });
+        break;
+    }
   }
 
   void _onStatusChanged(String status) {
@@ -182,12 +255,100 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
     _applyFilters();
   }
 
+  // 🔧 NEW: Quick date filter methods
+  Widget _buildQuickDateFilter(String label, String type, {bool isActive = false}) {
+    return InkWell(
+      onTap: () => _applyQuickDateFilter(type),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: isActive || _isDateFilterActive(type) ? Colors.brown : Colors.grey[100],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isActive || _isDateFilterActive(type) ? Colors.brown : Colors.grey.withOpacity(0.3),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+            color: isActive || _isDateFilterActive(type) ? Colors.white : Colors.black87,
+          ),
+        ),
+      ),
+    );
+  }
+
+  bool _isDateFilterActive(String type) {
+    if (dateRange == null) return false;
+    final now = DateTime.now();
+    switch (type) {
+      case 'today':
+        return dateRange!.start.day == now.day && 
+               dateRange!.start.month == now.month && 
+               dateRange!.start.year == now.year;
+      case 'week':
+        final weekStart = now.subtract(Duration(days: now.weekday - 1));
+        return dateRange!.start.day == weekStart.day && 
+               dateRange!.start.month == weekStart.month;
+      case 'month':
+        return dateRange!.start.month == now.month && 
+               dateRange!.start.year == now.year;
+      default:
+        return false;
+    }
+  }
+
+  void _applyQuickDateFilter(String type) {
+    final now = DateTime.now();
+    setState(() {
+      switch (type) {
+        case 'today':
+          dateRange = DateTimeRange(
+            start: DateTime(now.year, now.month, now.day),
+            end: DateTime(now.year, now.month, now.day, 23, 59, 59),
+          );
+          break;
+        case 'week':
+          final weekStart = now.subtract(Duration(days: now.weekday - 1));
+          dateRange = DateTimeRange(
+            start: DateTime(weekStart.year, weekStart.month, weekStart.day),
+            end: DateTime(now.year, now.month, now.day, 23, 59, 59),
+          );
+          break;
+        case 'month':
+          dateRange = DateTimeRange(
+            start: DateTime(now.year, now.month, 1),
+            end: DateTime(now.year, now.month + 1, 0, 23, 59, 59),
+          );
+          break;
+        case 'clear':
+          dateRange = null;
+          break;
+      }
+    });
+    _applyFilters();
+  }
+
   int _getActiveFilterCount() {
     int count = 0;
+    if (selectedPaymentMethod != 'all') count++;
+    if (dateRange != null) count++;
+    if (minAmount != null || maxAmount != null) count++;
     if (selectedStatus != 'all') count++;
     if (selectedUserId != 'all') count++;
     if (searchQuery.isNotEmpty) count++;
     return count;
+  }
+
+  void _showAdvancedFilters() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _buildAdvancedFiltersSheet(),
+    );
   }
 
   void _showFilterSummary() {
@@ -238,12 +399,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
-              // Clear all filters
-              _searchController.clear();
-              _onSearchChanged('');
-              _onStatusChanged('all');
-              _onUserChanged('all');
-              _tabController.animateTo(0);
+              _resetFilters();
             },
             child: const Text('Xóa tất cả'),
           ),
@@ -254,6 +410,195 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
         ],
       ),
     );
+  }
+
+  Widget _buildAdvancedFiltersSheet() {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.7,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        children: [
+          // Handle bar
+          Container(
+            margin: const EdgeInsets.only(top: 12),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          
+          // Header
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Bộ lọc nâng cao',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+          ),
+          
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Payment Method Filter
+                  const Text('Phương thức thanh toán:', style: TextStyle(fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: paymentMethods.map((method) => FilterChip(
+                      selected: selectedPaymentMethod == method['key'],
+                      label: Text(method['label']!),
+                      onSelected: (selected) {
+                        setState(() {
+                          selectedPaymentMethod = selected ? method['key']! : 'all';
+                        });
+                        _applyFilters();
+                      },
+                    )).toList(),
+                  ),
+                  
+                  const SizedBox(height: 24),
+                  
+                  // Amount Range Filter
+                  const Text('Khoảng giá trị đơn hàng:', style: TextStyle(fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          decoration: const InputDecoration(
+                            labelText: 'Từ (₫)',
+                            border: OutlineInputBorder(),
+                          ),
+                          keyboardType: TextInputType.number,
+                          onChanged: (value) {
+                            setState(() {
+                              minAmount = double.tryParse(value);
+                            });
+                            _applyFilters();
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TextField(
+                          decoration: const InputDecoration(
+                            labelText: 'Đến (₫)',
+                            border: OutlineInputBorder(),
+                          ),
+                          keyboardType: TextInputType.number,
+                          onChanged: (value) {
+                            setState(() {
+                              maxAmount = double.tryParse(value);
+                            });
+                            _applyFilters();
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 24),
+                  
+                  // Custom Date Range
+                  const Text('Khoảng thời gian tùy chỉnh:', style: TextStyle(fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 8),
+                  InkWell(
+                    onTap: () async {
+                      final picked = await showDateRangePicker(
+                        context: context,
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime.now(),
+                        initialDateRange: dateRange,
+                      );
+                      if (picked != null) {
+                        setState(() {
+                          dateRange = picked;
+                        });
+                        _applyFilters();
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            dateRange != null
+                                ? '${dateRange!.start.day}/${dateRange!.start.month} - ${dateRange!.end.day}/${dateRange!.end.month}'
+                                : 'Chọn khoảng thời gian',
+                          ),
+                          const Icon(Icons.date_range),
+                        ],
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 32),
+                  
+                  // Reset Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        _resetFilters();
+                        Navigator.pop(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey[300],
+                        foregroundColor: Colors.black87,
+                      ),
+                      child: const Text('Xóa tất cả bộ lọc'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _resetFilters() {
+    setState(() {
+      selectedStatus = 'all';
+      selectedUserId = 'all';
+      selectedPaymentMethod = 'all';
+      dateRange = null;
+      minAmount = null;
+      maxAmount = null;
+      searchQuery = '';
+      sortBy = 'date_desc';
+      _searchController.clear();
+    });
+    _applyFilters();
+  }
+
+  int _getStatusCount(String status) {
+    if (status == 'all') return orders.length;
+    return orders.where((order) => order.orderStatus == status).length;
   }
 
   @override
@@ -270,7 +615,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
         elevation: 0,
         actions: [
           // Filter indicator
-          if (selectedUserId != 'all' || searchQuery.isNotEmpty || selectedStatus != 'all')
+          if (_getActiveFilterCount() > 0)
             Container(
               margin: const EdgeInsets.only(right: 8),
               child: Stack(
@@ -278,10 +623,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                   IconButton(
                     icon: const Icon(Icons.filter_list),
                     tooltip: 'Đang lọc dữ liệu',
-                    onPressed: () {
-                      // Show filter summary dialog
-                      _showFilterSummary();
-                    },
+                    onPressed: _showFilterSummary,
                   ),
                   Positioned(
                     right: 6,
@@ -343,264 +685,217 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.brown, width: 2),
+                  borderSide: const BorderSide(color: Colors.brown),
                 ),
                 filled: true,
                 fillColor: Colors.grey[50],
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
             ),
           ),
           
-          // User Filter Dropdown
+          // 🔧 NEW: Smart Filters Row với Time Filter ở góc
           Container(
             color: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
+            padding: const EdgeInsets.all(16),
+            child: Column(
               children: [
-                Icon(
-                  Icons.person_outline,
-                  size: 20,
-                  color: Colors.brown,
-                ),
-                const SizedBox(width: 8),
-                const Text(
-                  'Lọc theo khách hàng:',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.brown.withOpacity(0.3)),
-                      borderRadius: BorderRadius.circular(8),
-                      color: Colors.grey[50],
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: selectedUserId,
-                        isExpanded: true,
-                        icon: Icon(Icons.arrow_drop_down, color: Colors.brown),
-                        style: const TextStyle(
-                          color: Colors.black87,
-                          fontSize: 14,
+                // Top Row: Sort & Advanced Filters
+                Row(
+                  children: [
+                    // Sort Dropdown
+                    Expanded(
+                      flex: 2,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.brown.withOpacity(0.3)),
+                          borderRadius: BorderRadius.circular(8),
+                          color: Colors.grey[50],
                         ),
-                        onChanged: (String? newValue) {
-                          if (newValue != null) {
-                            _onUserChanged(newValue);
-                          }
-                        },
-                        items: _buildUserDropdownItems(),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: sortBy,
+                            isExpanded: true,
+                            icon: Icon(Icons.sort, color: Colors.brown, size: 18),
+                            style: const TextStyle(color: Colors.black87, fontSize: 13),
+                            onChanged: (String? newValue) {
+                              if (newValue != null) {
+                                setState(() {
+                                  sortBy = newValue;
+                                });
+                                _applyFilters();
+                              }
+                            },
+                            items: sortOptions.map<DropdownMenuItem<String>>((option) {
+                              return DropdownMenuItem<String>(
+                                value: option['key'],
+                                child: Text(option['label']!, style: const TextStyle(fontSize: 13)),
+                              );
+                            }).toList(),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                    const SizedBox(width: 8),
+                    
+                    // Quick Date Filters (Time Filter ở góc)
+                    Expanded(
+                      flex: 3,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            _buildQuickDateFilter('Hôm nay', 'today'),
+                            const SizedBox(width: 4),
+                            _buildQuickDateFilter('Tuần', 'week'),
+                            const SizedBox(width: 4),
+                            _buildQuickDateFilter('Tháng', 'month'),
+                            const SizedBox(width: 4),
+                            if (dateRange != null)
+                              _buildQuickDateFilter('Xóa', 'clear', isActive: true),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    
+                    // Advanced Filter Button
+                    Container(
+                      decoration: BoxDecoration(
+                        color: _getActiveFilterCount() > 0 ? Colors.brown : Colors.grey[100],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: IconButton(
+                        icon: Icon(
+                          Icons.tune,
+                          color: _getActiveFilterCount() > 0 ? Colors.white : Colors.brown,
+                          size: 20,
+                        ),
+                        onPressed: _showAdvancedFilters,
+                        tooltip: 'Bộ lọc nâng cao',
+                        padding: const EdgeInsets.all(8),
+                        constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                      ),
+                    ),
+                  ],
                 ),
-                if (selectedUserId != 'all') ...[
-                  const SizedBox(width: 8),
-                  IconButton(
-                    icon: const Icon(Icons.clear, color: Colors.red, size: 20),
-                    tooltip: 'Xóa lọc khách hàng',
-                    onPressed: () => _onUserChanged('all'),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                  ),
-                ],
-              ],
-            ),
-          ),
-
-          // Quick User Filter Section
-          if (users.isNotEmpty && selectedUserId == 'all')
-            Container(
-              color: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+                
+                const SizedBox(height: 12),
+                
+                // 🔧 NEW: Horizontal User List
+                if (users.isNotEmpty)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.people_outline,
-                        size: 18,
-                        color: Colors.brown,
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Xem đơn hàng theo khách hàng:',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    height: 100,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: _getUniqueUsersWithOrders().length,
-                      itemBuilder: (context, index) {
-                        final userInfo = _getUniqueUsersWithOrders()[index];
-                        final user = userInfo['user'] as User;
-                        final orderCount = userInfo['orderCount'] as int;
-                        
-                        return Container(
-                          width: 140,
-                          margin: const EdgeInsets.only(right: 12),
-                          child: Card(
-                            elevation: 2,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.people_outline, size: 16, color: Colors.brown),
+                              const SizedBox(width: 6),
+                              const Text(
+                                'Lọc theo khách hàng:',
+                                style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+                              ),
+                            ],
+                          ),
+                          if (selectedUserId != 'all')
+                            TextButton(
+                              onPressed: () => _onUserChanged('all'),
+                              child: const Text('Xóa bộ lọc', style: TextStyle(fontSize: 12)),
+                              style: TextButton.styleFrom(
+                                foregroundColor: Colors.red,
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                minimumSize: Size.zero,
+                              ),
                             ),
-                            child: InkWell(
-                              onTap: () => _onUserChanged(user.id),
-                              borderRadius: BorderRadius.circular(8),
-                              child: Padding(
-                                padding: const EdgeInsets.all(12),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      
+                      // Horizontal User Chips
+                      SizedBox(
+                        height: 40,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: users.length,
+                          itemBuilder: (context, index) {
+                            final user = users.values.elementAt(index);
+                            final isSelected = selectedUserId == user.id;
+                            final userOrderCount = orders.where((o) => o.userId == user.id).length;
+                            
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: FilterChip(
+                                selected: isSelected,
+                                label: Row(
+                                  mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Row(
+                                    CircleAvatar(
+                                      radius: 12,
+                                      backgroundColor: isSelected ? Colors.white : Colors.brown.withOpacity(0.1),
+                                      backgroundImage: user.avatar != null && user.avatar!.isNotEmpty
+                                          ? NetworkImage(user.avatar!)
+                                          : null,
+                                      child: user.avatar == null || user.avatar!.isEmpty
+                                          ? Text(
+                                              user.userName.isNotEmpty ? user.userName[0].toUpperCase() : '?',
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                                color: isSelected ? Colors.brown : Colors.brown.withOpacity(0.7),
+                                              ),
+                                            )
+                                          : null,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        CircleAvatar(
-                                          radius: 12,
-                                          backgroundColor: Colors.brown.withOpacity(0.1),
-                                          child: Text(
-                                            user.userName.isNotEmpty 
-                                                ? user.userName[0].toUpperCase() 
-                                                : 'U',
-                                            style: TextStyle(
-                                              color: Colors.brown,
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.bold,
-                                            ),
+                                        Text(
+                                          user.userName.length > 8 
+                                              ? '${user.userName.substring(0, 8)}...' 
+                                              : user.userName,
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w500,
+                                            color: isSelected ? Colors.white : Colors.black87,
                                           ),
                                         ),
-                                        const Spacer(),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: Colors.brown,
-                                            borderRadius: BorderRadius.circular(10),
-                                          ),
-                                          child: Text(
-                                            '$orderCount',
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.bold,
-                                            ),
+                                        Text(
+                                          '$userOrderCount đơn',
+                                          style: TextStyle(
+                                            fontSize: 9,
+                                            color: isSelected ? Colors.white70 : Colors.grey[600],
                                           ),
                                         ),
                                       ],
                                     ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      user.userName,
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.black87,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      '$orderCount đơn hàng',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: Colors.grey[600],
-                                      ),
-                                    ),
                                   ],
                                 ),
+                                onSelected: (selected) {
+                                  _onUserChanged(selected ? user.id : 'all');
+                                },
+                                backgroundColor: Colors.grey[50],
+                                selectedColor: Colors.brown,
+                                checkmarkColor: Colors.white,
+                                side: BorderSide(
+                                  color: isSelected ? Colors.brown : Colors.grey.withOpacity(0.3),
+                                  width: 1,
+                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          
-          // Selected User Info
-          if (selectedUserId != 'all')
-            Container(
-              color: Colors.brown.withOpacity(0.05),
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 20,
-                    backgroundColor: Colors.brown.withOpacity(0.2),
-                    child: Text(
-                      users[selectedUserId]?.userName.isNotEmpty == true 
-                          ? users[selectedUserId]!.userName[0].toUpperCase() 
-                          : 'U',
-                      style: const TextStyle(
-                        color: Colors.brown,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Đơn hàng của: ${users[selectedUserId]?.userName ?? "N/A"}',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.brown,
-                          ),
+                            );
+                          },
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          users[selectedUserId]?.email ?? '',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.brown,
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    child: Text(
-                      '${orders.where((o) => o.userId == selectedUserId).length} đơn hàng',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
                       ),
-                    ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Colors.brown),
-                    onPressed: () => _onUserChanged('all'),
-                    tooltip: 'Xóa lọc người dùng',
-                  ),
-                ],
-              ),
+              ],
             ),
+          ),
           
           // Status Tabs
           Container(
@@ -708,22 +1003,16 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
           // Orders List
           Expanded(
             child: isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(color: Colors.brown),
-                  )
+                ? const Center(child: CircularProgressIndicator())
                 : filteredOrders.isEmpty
                     ? _buildEmptyState()
-                    : RefreshIndicator(
-                        onRefresh: fetchOrders,
-                        color: Colors.brown,
-                        child: ListView.builder(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: filteredOrders.length,
-                          itemBuilder: (context, index) {
-                            final order = filteredOrders[index];
-                            return _buildOrderCard(order);
-                          },
-                        ),
+                    : ListView.builder(
+                        itemCount: filteredOrders.length,
+                        itemBuilder: (context, index) {
+                          final order = filteredOrders[index];
+                          final user = users[order.userId];
+                          return _buildOrderCard(order, user);
+                        },
                       ),
           ),
         ],
@@ -731,95 +1020,24 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
     );
   }
 
-  int _getStatusCount(String statusKey) {
-    if (statusKey == 'all') return orders.length;
-    return orders.where((order) => order.orderStatus == statusKey).length;
-  }
-
-  List<Map<String, dynamic>> _getUniqueUsersWithOrders() {
-    Map<String, int> userOrderCounts = {};
-    
-    // Count orders for each user
-    for (Order order in orders) {
-      userOrderCounts[order.userId] = (userOrderCounts[order.userId] ?? 0) + 1;
-    }
-    
-    // Convert to list with user info and order count
-    List<Map<String, dynamic>> result = [];
-    for (String userId in userOrderCounts.keys) {
-      final user = users[userId];
-      if (user != null) {
-        result.add({
-          'user': user,
-          'orderCount': userOrderCounts[userId]!,
-        });
-      }
-    }
-    
-    // Sort by order count (descending)
-    result.sort((a, b) => (b['orderCount'] as int).compareTo(a['orderCount'] as int));
-    
-    return result;
-  }
-
-  List<DropdownMenuItem<String>> _buildUserDropdownItems() {
-    List<DropdownMenuItem<String>> items = [
-      const DropdownMenuItem<String>(
-        value: 'all',
-        child: Text('Tất cả khách hàng'),
-      ),
-    ];
-
-    // Get unique users from orders
-    Set<String> userIds = orders.map((order) => order.userId).toSet();
-    
-    for (String userId in userIds) {
-      final user = users[userId];
-      if (user != null) {
-        final orderCount = orders.where((order) => order.userId == userId).length;
-        items.add(
-          DropdownMenuItem<String>(
-            value: userId,
-            child: Text(
-              '${user.userName} ($orderCount đơn)',
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        );
-      }
-    }
-
-    // Sort by user name (except 'all' option)
-    items.skip(1).toList().sort((a, b) {
-      final userA = users[a.value];
-      final userB = users[b.value];
-      if (userA != null && userB != null) {
-        return userA.userName.compareTo(userB.userName);
-      }
-      return 0;
-    });
-
-    return items;
-  }
-
   Widget _buildEmptyState() {
     String message;
     IconData icon;
     
     if (searchQuery.isNotEmpty) {
-      message = 'Không tìm thấy đơn hàng nào\nphù hợp với từ khóa "$searchQuery"';
+      message = 'Không tìm thấy đơn hàng nào với từ khóa "$searchQuery"';
       icon = Icons.search_off;
     } else if (selectedUserId != 'all') {
-      final userName = users[selectedUserId]?.userName ?? 'khách hàng';
-      message = 'Không có đơn hàng nào\ncủa khách hàng "$userName"';
+      final userName = users[selectedUserId]?.userName ?? 'khách hàng này';
+      message = 'Không có đơn hàng nào của $userName';
       icon = Icons.person_off;
     } else if (selectedStatus != 'all') {
       final statusLabel = statusList.firstWhere((s) => s['key'] == selectedStatus)['label'];
-      message = 'Không có đơn hàng nào\nở trạng thái "$statusLabel"';
-      icon = Icons.filter_list_off;
+      message = 'Không có đơn hàng nào với trạng thái "$statusLabel"';
+      icon = Icons.receipt_long_outlined;
     } else {
       message = 'Chưa có đơn hàng nào';
-      icon = Icons.receipt_long_outlined;
+      icon = Icons.shopping_cart_outlined;
     }
 
     return Center(
@@ -828,7 +1046,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
         children: [
           Icon(
             icon,
-            size: 64,
+            size: 80,
             color: Colors.grey[400],
           ),
           const SizedBox(height: 16),
@@ -841,54 +1059,53 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
             ),
             textAlign: TextAlign.center,
           ),
-          if (searchQuery.isNotEmpty || selectedStatus != 'all' || selectedUserId != 'all') ...[
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: () {
-                _searchController.clear();
-                _onSearchChanged('');
-                _onStatusChanged('all');
-                _onUserChanged('all');
-                _tabController.animateTo(0);
-              },
-              icon: const Icon(Icons.clear, size: 18),
-              label: const Text('Xóa tất cả bộ lọc'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.brown,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-              ),
+          const SizedBox(height: 8),
+          Text(
+            'Hãy thử tìm kiếm với từ khóa khác hoặc xóa bộ lọc',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[500],
             ),
-          ],
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: () {
+              _resetFilters();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.brown,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+            child: const Text('Xóa tất cả bộ lọc'),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildOrderCard(Order order) {
-    final user = users[order.userId];
-    final firstItem = order.cartItems.isNotEmpty ? order.cartItems.first : null;
-
+  Widget _buildOrderCard(Order order, User? user) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => OrderDetailPage(orderId: order.id),
-          ),
-        ),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => OrderDetailPage(orderId: order.id),
+            ),
+          );
+        },
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Order Header
+              // Header Row
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -897,164 +1114,135 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Đơn hàng #${order.id.substring(0, 8).toUpperCase()}',
+                          'Đơn hàng #${order.id.substring(0, 8)}...',
                           style: const TextStyle(
-                            fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black87,
+                            fontSize: 16,
                           ),
                         ),
                         const SizedBox(height: 4),
-                        if (user != null) ...[
-                          GestureDetector(
-                            onTap: () => _onUserChanged(user.id),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: selectedUserId == user.id 
-                                    ? Colors.brown.withOpacity(0.1)
-                                    : Colors.transparent,
-                                borderRadius: BorderRadius.circular(4),
-                                border: selectedUserId == user.id 
-                                    ? Border.all(color: Colors.brown.withOpacity(0.3))
-                                    : null,
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.person,
-                                    size: 14,
-                                    color: selectedUserId == user.id 
-                                        ? Colors.brown 
-                                        : Colors.grey[600],
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Expanded(
-                                    child: Text(
-                                      user.userName,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: selectedUserId == user.id 
-                                            ? Colors.brown 
-                                            : Colors.grey[600],
-                                        fontWeight: selectedUserId == user.id 
-                                            ? FontWeight.w600 
-                                            : FontWeight.w500,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  if (selectedUserId == user.id)
-                                    Icon(
-                                      Icons.filter_alt,
-                                      size: 12,
-                                      color: Colors.brown,
-                                    ),
-                                ],
-                              ),
-                            ),
+                        Text(
+                          '${order.orderDate.day}/${order.orderDate.month}/${order.orderDate.year} ${order.orderDate.hour}:${order.orderDate.minute.toString().padLeft(2, '0')}',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 12,
                           ),
-                        ],
+                        ),
                       ],
                     ),
                   ),
-                  _buildStatusBadge(order.orderStatus),
+                  _buildStatusChip(order.orderStatus),
                 ],
               ),
+              
               const SizedBox(height: 12),
               
-              // Order Info
-              Row(
-                children: [
-                  Icon(
-                    Icons.access_time,
-                    size: 14,
-                    color: Colors.grey[600],
+              // Customer Info
+              if (user != null)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  const SizedBox(width: 4),
-                  Text(
-                    _formatDate(order.orderDate),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Icon(
-                    Icons.payment,
-                    size: 14,
-                    color: Colors.grey[600],
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    _getPaymentMethodText(order.paymentMethod),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              
-              // Product Preview & Total
-              Row(
-                children: [
-                  if (firstItem != null) ...[
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(6),
-                        color: Colors.grey[200],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(6),
-                        child: Image.network(
-                          firstItem.image,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Icon(
-                            Icons.image_not_supported,
-                            color: Colors.grey[400],
-                            size: 20,
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 20,
+                        backgroundColor: Colors.brown.withOpacity(0.1),
+                        child: Text(
+                          user.userName.isNotEmpty 
+                              ? user.userName[0].toUpperCase() 
+                              : 'U',
+                          style: const TextStyle(
+                            color: Colors.brown,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        order.cartItems.length == 1
-                            ? '${firstItem.title} x${firstItem.quantity}'
-                            : '${firstItem.title} và ${order.cartItems.length - 1} sản phẩm khác',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              user.userName,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              user.email,
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ] else ...[
-                    Expanded(
-                      child: Text(
-                        'Đơn hàng trống',
+                      IconButton(
+                        icon: const Icon(Icons.person, color: Colors.brown),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => UserDetailPage(userId: user.id),
+                            ),
+                          );
+                        },
+                        tooltip: 'Xem thông tin khách hàng',
+                      ),
+                    ],
+                  ),
+                ),
+              
+              const SizedBox(height: 12),
+              
+              // Order Details
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Tổng tiền:',
                         style: TextStyle(
-                          fontSize: 13,
                           color: Colors.grey[600],
+                          fontSize: 12,
                         ),
                       ),
-                    ),
-                  ],
-                  
-                  Text(
-                    _formatCurrency(order.totalAmount),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.brown,
-                    ),
+                      Text(
+                        '${order.totalAmount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}₫',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Colors.brown,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        'Thanh toán:',
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 12,
+                        ),
+                      ),
+                      Text(
+                        _getPaymentMethodText(order.paymentMethod),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w500,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -1065,7 +1253,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildStatusBadge(String status) {
+  Widget _buildStatusChip(String status) {
     Color color;
     String label;
 
@@ -1092,51 +1280,37 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
         break;
       default:
         color = Colors.grey;
-        label = status.toUpperCase();
+        label = 'Không xác định';
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: color.withOpacity(0.3)),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Text(
         label,
         style: TextStyle(
           color: color,
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w600,
+          fontSize: 12,
         ),
       ),
     );
   }
 
-  String _formatCurrency(int amount) {
-    if (amount >= 1000000) {
-      return '${(amount / 1000000).toStringAsFixed(1)}M VND';
-    } else if (amount >= 1000) {
-      return '${(amount / 1000).toStringAsFixed(0)}K VND';
-    } else {
-      return '$amount VND';
-    }
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
-  }
-
   String _getPaymentMethodText(String method) {
     switch (method) {
       case 'cash':
-        return 'Tiền mặt';
+        return 'Thanh toán khi nhận';
       case 'momo':
         return 'MoMo';
       case 'paypal':
         return 'PayPal';
       default:
-        return method.toUpperCase();
+        return method;
     }
   }
 }

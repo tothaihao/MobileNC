@@ -207,12 +207,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           ),
                     items: addresses.map((address) => DropdownMenuItem(
                       value: address.id,
-                            child: Text(
-                              '${address.streetAddress}, ${address.ward}, ${address.district}, ${address.city}',
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                              style: const TextStyle(fontSize: 14), // Consistent font size
-                            ),
+                      child: Container(
+                        width: double.infinity,
+                        child: Text(
+                          '${address.streetAddress}, ${address.ward}, ${address.district}, ${address.city}',
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                      ),
                     )).toList(),
                     onChanged: (value) {
                       setState(() {

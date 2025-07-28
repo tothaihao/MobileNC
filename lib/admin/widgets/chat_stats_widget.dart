@@ -17,8 +17,8 @@ class ChatStatsWidget extends StatelessWidget {
     final stats = _calculateStats();
     
     return Container(
-      padding: const EdgeInsets.all(16),
-      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12), // 🔧 Giảm padding từ 16 → 12
+      margin: const EdgeInsets.all(12), // 🔧 Giảm margin từ 16 → 12
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -105,40 +105,49 @@ class ChatStatsWidget extends StatelessWidget {
 
   Widget _buildStatItem(String label, String value, IconData icon, Color color) {
     return Expanded(
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 4), // 🔧 Thêm padding horizontal
+        child: Column(
+          mainAxisSize: MainAxisSize.min, // 🔧 Quan trọng để tránh overflow
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                icon,
+                color: color,
+                size: 20, // 🔧 Giảm icon size từ 24 → 20
+              ),
             ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 24,
+            const SizedBox(height: 6), // 🔧 Giảm spacing từ 8 → 6
+            FittedBox( // 🔧 FittedBox để text tự điều chỉnh kích thước
+              fit: BoxFit.scaleDown,
+              child: Text(
+                value,
+                style: TextStyle(
+                  fontSize: 18, // 🔧 Giảm font size từ 20 → 18
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: color,
+            const SizedBox(height: 2), // 🔧 Giảm spacing từ 4 → 2
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 10, // 🔧 Giảm font size từ 11 → 10
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+              maxLines: 2, // 🔧 Cho phép wrap 2 dòng
+              overflow: TextOverflow.ellipsis, // 🔧 Xử lý overflow
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

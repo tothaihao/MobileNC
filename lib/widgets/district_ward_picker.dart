@@ -56,67 +56,76 @@ class _DistrictWardPickerState extends State<DistrictWardPicker> {
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
     }
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: DropdownButtonFormField<District>(
-            value: _selectedDistrict,
-            decoration: const InputDecoration(
-              labelText: 'Quận/Huyện *',
-              border: OutlineInputBorder(),
-              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            ),
-            items: _districts
-                .map((d) => DropdownMenuItem(
-                      value: d,
+        // District Dropdown
+        DropdownButtonFormField<District>(
+          value: _selectedDistrict,
+          decoration: const InputDecoration(
+            labelText: 'Quận/Huyện *',
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          ),
+          isExpanded: true, // 🔧 FIX: Ensure full width usage
+          items: _districts
+              .map((d) => DropdownMenuItem(
+                    value: d,
+                    child: Container(
+                      width: double.infinity,
                       child: Text(
                         d.name,
-                        overflow: TextOverflow.ellipsis, // Prevent overflow
-                        maxLines: 1, // Ensure single line
-                        style: const TextStyle(fontSize: 14), // Consistent font size
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        style: const TextStyle(fontSize: 14),
                       ),
-                    ))
-                .toList(),
-            onChanged: (district) {
-              setState(() {
-                _selectedDistrict = district;
-                _selectedWard = null;
-              });
-              if (district != null) {
-                widget.onChanged(district.name, '');
-              }
-            },
-          ),
+                    ),
+                  ))
+              .toList(),
+          onChanged: (district) {
+            setState(() {
+              _selectedDistrict = district;
+              _selectedWard = null;
+            });
+            if (district != null) {
+              widget.onChanged(district.name, '');
+            }
+          },
+          validator: (value) => value == null ? 'Vui lòng chọn quận/huyện' : null,
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: DropdownButtonFormField<Ward>(
-            value: _selectedWard,
-            decoration: const InputDecoration(
-              labelText: 'Phường/Xã *',
-              border: OutlineInputBorder(),
-              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            ),
-            items: (_selectedDistrict?.wards ?? [])
-                .map((w) => DropdownMenuItem(
-                      value: w,
+        const SizedBox(height: 16),
+        
+        // Ward/Commune Dropdown
+        DropdownButtonFormField<Ward>(
+          value: _selectedWard,
+          decoration: const InputDecoration(
+            labelText: 'Phường/Xã *',
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          ),
+          isExpanded: true, // 🔧 FIX: Ensure full width usage
+          items: (_selectedDistrict?.wards ?? [])
+              .map((w) => DropdownMenuItem(
+                    value: w,
+                    child: Container(
+                      width: double.infinity,
                       child: Text(
                         w.name,
-                        overflow: TextOverflow.ellipsis, // Prevent overflow
-                        maxLines: 1, // Ensure single line
-                        style: const TextStyle(fontSize: 14), // Consistent font size
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        style: const TextStyle(fontSize: 14),
                       ),
-                    ))
-                .toList(),
-            onChanged: (ward) {
-              setState(() {
-                _selectedWard = ward;
-              });
-              if (_selectedDistrict != null && ward != null) {
-                widget.onChanged(_selectedDistrict!.name, ward.name);
-              }
-            },
-          ),
+                    ),
+                  ))
+              .toList(),
+          onChanged: (ward) {
+            setState(() {
+              _selectedWard = ward;
+            });
+            if (_selectedDistrict != null && ward != null) {
+              widget.onChanged(_selectedDistrict!.name, ward.name);
+            }
+          },
+          validator: (value) => value == null ? 'Vui lòng chọn phường/xã' : null,
         ),
       ],
     );

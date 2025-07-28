@@ -307,162 +307,6 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
-  // NEW METHOD: Responsive Stats Section
-  Widget _buildResponsiveStatsSection() {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isTablet = screenWidth > 600;
-    final cardWidth = isTablet 
-      ? (screenWidth - 48) / 3 - 8  // 3 cards per row on tablet
-      : (screenWidth - 48) / 2 - 6; // 2 cards per row on mobile
-
-    return Column(
-      children: [
-        // Today's Stats
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: [
-            SizedBox(
-              width: cardWidth,
-              child: StatisticCard(
-                title: 'Doanh thu hôm nay',
-                value: _formatCurrency(todayRevenue),
-                icon: Icons.today,
-                iconColor: Colors.green,
-              ),
-            ),
-            SizedBox(
-              width: cardWidth,
-              child: StatisticCard(
-                title: 'Đơn hàng hôm nay',
-                value: '$todayOrders',
-                icon: Icons.shopping_cart_outlined,
-                iconColor: Colors.blue,
-              ),
-            ),
-            if (isTablet) // Third card on same row for tablets
-              SizedBox(
-                width: cardWidth,
-                child: StatisticCard(
-                  title: 'Đơn chờ xử lý',
-                  value: '$pendingOrders',
-                  icon: Icons.pending_actions,
-                  iconColor: Colors.orange,
-                ),
-              ),
-          ],
-        ),
-        
-        const SizedBox(height: 12),
-        
-        // Order Status Stats
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: [
-            if (!isTablet) // Show on mobile (wasn't shown above)
-              SizedBox(
-                width: cardWidth,
-                child: StatisticCard(
-                  title: 'Đơn chờ xử lý',
-                  value: '$pendingOrders',
-                  icon: Icons.pending_actions,
-                  iconColor: Colors.orange,
-                ),
-              ),
-            SizedBox(
-              width: cardWidth,
-              child: StatisticCard(
-                title: 'Đơn hoàn thành',
-                value: '$completedOrders',
-                icon: Icons.check_circle,
-                iconColor: Colors.green,
-              ),
-            ),
-            if (isTablet)
-              SizedBox(
-                width: cardWidth,
-                child: StatisticCard(
-                  title: 'Tổng doanh thu',
-                  value: _formatCurrency(totalRevenue),
-                  icon: Icons.attach_money,
-                  iconColor: Colors.green,
-                ),
-              ),
-          ],
-        ),
-
-        const SizedBox(height: 12),
-        
-        // Total Stats
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: [
-            if (!isTablet) // Show on mobile
-              SizedBox(
-                width: cardWidth,
-                child: StatisticCard(
-                  title: 'Tổng doanh thu',
-                  value: _formatCurrency(totalRevenue),
-                  icon: Icons.attach_money,
-                  iconColor: Colors.green,
-                ),
-              ),
-            SizedBox(
-              width: cardWidth,
-              child: StatisticCard(
-                title: 'Tổng đơn hàng',
-                value: '$orderCount',
-                icon: Icons.shopping_cart,
-                iconColor: Colors.blue,
-              ),
-            ),
-            if (isTablet)
-              SizedBox(
-                width: cardWidth,
-                child: StatisticCard(
-                  title: 'Số admin',
-                  value: '$adminCount',
-                  icon: Icons.admin_panel_settings,
-                  iconColor: Colors.red,
-                ),
-              ),
-          ],
-        ),
-
-        const SizedBox(height: 12),
-        
-        // User Stats
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: [
-            if (!isTablet) // Show on mobile
-              SizedBox(
-                width: cardWidth,
-                child: StatisticCard(
-                  title: 'Số admin',
-                  value: '$adminCount',
-                  icon: Icons.admin_panel_settings,
-                  iconColor: Colors.red,
-                ),
-              ),
-            SizedBox(
-              width: cardWidth,
-              child: StatisticCard(
-                title: 'Số user',
-                value: '$userCount',
-                icon: Icons.person,
-                iconColor: Colors.purple,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
   Widget _buildOrderItem(Map<String, dynamic> order) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
@@ -621,7 +465,7 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  // 🔧 FIXED: Simple Grid Layout for Stats Cards
+  // 🔧 FIXED: Simple Grid Layout for Stats Cards với better overflow handling
   Widget _buildStatsGrid() {
     final screenWidth = MediaQuery.of(context).size.width;
     final crossAxisCount = screenWidth > 600 ? 3 : 2; // 3 columns on tablet, 2 on mobile
@@ -665,17 +509,20 @@ class _DashboardPageState extends State<DashboardPage> {
       ),
     ];
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossAxisCount,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 1.6, // 🔧 Tỷ lệ để card không quá cao
+    // 🔧 Sử dụng Container với height cố định thay vì GridView shrinkWrap
+    return Container(
+      height: crossAxisCount == 2 ? 240 : 180, // 🔧 Height tính toán dựa trên số cột
+      child: GridView.builder(
+        physics: const NeverScrollableScrollPhysics(), // 🔧 Tắt scroll riêng
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: crossAxisCount,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: crossAxisCount == 2 ? 2.8 : 2.2, // 🔧 Tăng aspect ratio hơn nữa
+        ),
+        itemCount: statsCards.length,
+        itemBuilder: (context, index) => statsCards[index],
       ),
-      itemCount: statsCards.length,
-      itemBuilder: (context, index) => statsCards[index],
     );
   }
 }

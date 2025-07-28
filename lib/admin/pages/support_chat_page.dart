@@ -123,86 +123,117 @@ class _SupportChatPageState extends State<SupportChatPage> {
                                             color: isSelected ? AppColors.primary.withOpacity(0.1) : null,
                                             border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
                                           ),
-                                          child: ListTile(
+                                          child: InkWell(
                                             onTap: () {
                                               setState(() {
                                                 selectedThread = thread;
                                               });
                                             },
-                                            leading: Stack(
-                                              children: [
-                                                CircleAvatar(
-                                                  backgroundColor: AppColors.primary,
-                                                  child: Text(
-                                                    thread.userName.isNotEmpty ? thread.userName[0].toUpperCase() : 'U',
-                                                    style: const TextStyle(color: Colors.white),
-                                                  ),
-                                                ),
-                                                if (hasUnreadFromUser)
-                                                  Positioned(
-                                                    right: 0,
-                                                    top: 0,
-                                                    child: Container(
-                                                      width: 12,
-                                                      height: 12,
-                                                      decoration: const BoxDecoration(
-                                                        color: Colors.red,
-                                                        shape: BoxShape.circle,
+                                            child: Padding(
+                                              padding: const EdgeInsets.all(12), // 🔧 Giảm padding
+                                              child: Row(
+                                                children: [
+                                                  // Avatar với notification dot
+                                                  Stack(
+                                                    children: [
+                                                      CircleAvatar(
+                                                        radius: 20, // 🔧 Giảm radius
+                                                        backgroundColor: AppColors.primary,
+                                                        child: Text(
+                                                          thread.userName.isNotEmpty ? thread.userName[0].toUpperCase() : 'U',
+                                                          style: const TextStyle(color: Colors.white, fontSize: 14),
+                                                        ),
                                                       ),
+                                                      if (hasUnreadFromUser)
+                                                        Positioned(
+                                                          right: 0,
+                                                          top: 0,
+                                                          child: Container(
+                                                            width: 10,
+                                                            height: 10,
+                                                            decoration: const BoxDecoration(
+                                                              color: Colors.red,
+                                                              shape: BoxShape.circle,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                    ],
+                                                  ),
+                                                  const SizedBox(width: 12),
+                                                  
+                                                  // Content column - sử dụng Expanded để tránh overflow
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      mainAxisSize: MainAxisSize.min, // 🔧 Quan trọng để tránh overflow
+                                                      children: [
+                                                        // Tên user
+                                                        Text(
+                                                          thread.userName.isNotEmpty ? thread.userName : 'Khách hàng',
+                                                          style: TextStyle(
+                                                            fontWeight: hasUnreadFromUser ? FontWeight.bold : FontWeight.w500,
+                                                            fontSize: 14, // 🔧 Giảm font size
+                                                          ),
+                                                          overflow: TextOverflow.ellipsis,
+                                                          maxLines: 1,
+                                                        ),
+                                                        const SizedBox(height: 2),
+                                                        // Email
+                                                        Text(
+                                                          thread.userEmail,
+                                                          style: const TextStyle(fontSize: 11, color: Colors.grey), // 🔧 Giảm font size
+                                                          overflow: TextOverflow.ellipsis,
+                                                          maxLines: 1,
+                                                        ),
+                                                        // Last message
+                                                        if (lastMessage != null) ...[
+                                                          const SizedBox(height: 2),
+                                                          Text(
+                                                            '${lastMessage.sender == 'user' ? '👤' : '👨‍💼'} ${lastMessage.content}',
+                                                            maxLines: 1,
+                                                            overflow: TextOverflow.ellipsis,
+                                                            style: TextStyle(
+                                                              fontSize: 12, // 🔧 Giảm font size
+                                                              fontWeight: hasUnreadFromUser ? FontWeight.w500 : FontWeight.normal,
+                                                              color: Colors.grey[600],
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ],
                                                     ),
                                                   ),
-                                              ],
-                                            ),
-                                            title: Text(
-                                              thread.userName.isNotEmpty ? thread.userName : 'Khách hàng',
-                                              style: TextStyle(
-                                                fontWeight: hasUnreadFromUser ? FontWeight.bold : FontWeight.normal,
+                                                  
+                                                  // Trailing column
+                                                  Column(
+                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    mainAxisSize: MainAxisSize.min, // 🔧 Quan trọng
+                                                    children: [
+                                                      Text(
+                                                        _formatDate(thread.updatedAt),
+                                                        style: const TextStyle(fontSize: 10, color: Colors.grey), // 🔧 Giảm font size
+                                                      ),
+                                                      if (hasUnreadFromUser) ...[
+                                                        const SizedBox(height: 4),
+                                                        Container(
+                                                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1), // 🔧 Giảm padding
+                                                          decoration: BoxDecoration(
+                                                            color: Colors.red,
+                                                            borderRadius: BorderRadius.circular(8),
+                                                          ),
+                                                          child: const Text(
+                                                            'NEW',
+                                                            style: TextStyle(
+                                                              color: Colors.white,
+                                                              fontSize: 8, // 🔧 Giảm font size
+                                                              fontWeight: FontWeight.bold,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ],
+                                                  ),
+                                                ],
                                               ),
-                                              overflow: TextOverflow.ellipsis, // Prevent overflow
-                                              maxLines: 1, // Ensure single line
-                                            ),
-                                            subtitle: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  thread.userEmail,
-                                                  style: const TextStyle(fontSize: 12, color: Colors.grey),
-                                                  overflow: TextOverflow.ellipsis, // Prevent overflow
-                                                  maxLines: 1, // Ensure single line
-                                                ),
-                                                if (lastMessage != null)
-                                                  Text(
-                                                    '${lastMessage.sender == 'user' ? '👤' : '👨‍💼'} ${lastMessage.content}',
-                                                    maxLines: 1,
-                                                    overflow: TextOverflow.ellipsis,
-                                                    style: TextStyle(
-                                                      fontSize: 13,
-                                                      fontWeight: hasUnreadFromUser ? FontWeight.bold : FontWeight.normal,
-                                                    ),
-                                                  ),
-                                              ],
-                                            ),
-                                            trailing: Column(
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              children: [
-                                                Text(
-                                                  _formatDate(thread.updatedAt),
-                                                  style: const TextStyle(fontSize: 12, color: Colors.grey),
-                                                ),
-                                                if (hasUnreadFromUser)
-                                                  Container(
-                                                    margin: const EdgeInsets.only(top: 4),
-                                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.red,
-                                                      borderRadius: BorderRadius.circular(10),
-                                                    ),
-                                                    child: const Text(
-                                                      'NEW',
-                                                      style: TextStyle(color: Colors.white, fontSize: 10),
-                                                    ),
-                                                  ),
-                                              ],
                                             ),
                                           ),
                                         );
