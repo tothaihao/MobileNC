@@ -252,6 +252,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         case 'greeting':
           print('ℹ️ Greeting intent triggered');
           return 'Chào bạn! Mình là chatbot của Fresh Drinks, sẵn sàng giúp bạn tìm món ngon. Hôm nay bạn muốn thử cà phê, trà sữa hay sản phẩm bán chạy?';
+          
         
         case 'help':
           print('ℹ️ Help intent triggered');

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:do_an_mobile_nc/theme/colors.dart'; // Import file color.dart
 
-class MasterLayout extends StatelessWidget {
+class MasterLayout extends StatefulWidget {
   final Widget child;
   final int currentIndex;
 
@@ -11,8 +11,30 @@ class MasterLayout extends StatelessWidget {
     this.currentIndex = 0,
   });
 
+  @override
+  _MasterLayoutState createState() => _MasterLayoutState();
+}
+
+class _MasterLayoutState extends State<MasterLayout> {
+  // Biến lưu trữ vị trí Y của FAB
+  double _fabYPosition = 100.0; // Vị trí ban đầu (cách đỉnh màn hình)
+  double _maxYPosition = 0.0; // Giới hạn dưới (sẽ được tính sau)
+
+  @override
+  void initState() {
+    super.initState();
+    // Tính toán giới hạn dưới trong initState
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final screenHeight = MediaQuery.of(context).size.height;
+      final bottomNavHeight = 80.0; // Ước lượng chiều cao của bottomNavigationBar
+      setState(() {
+        _maxYPosition = screenHeight - bottomNavHeight - 80.0; // 80 là chiều cao FAB
+      });
+    });
+  }
+
   void _onTabTapped(BuildContext context, int index) {
-    if (index == currentIndex) return;
+    if (index == widget.currentIndex) return;
 
     switch (index) {
       case 0:
@@ -38,113 +60,127 @@ class MasterLayout extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            Container(
-              decoration: BoxDecoration(
-                gradient: AppColors.primaryGradient,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.shadow,
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
+            Column(
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: AppColors.primaryGradient,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.shadow,
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: AppColors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(
+                                Icons.local_cafe,
+                                color: AppColors.white,
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Fresh Drinks',
+                              style: TextStyle(
+                                fontFamily: 'Pacifico',
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.white,
+                                shadows: [
+                                  Shadow(
+                                    color: AppColors.shadowMedium,
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                         Container(
-                          padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
                             color: AppColors.white.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Icon(
-                            Icons.local_cafe,
-                            color: AppColors.white,
-                            size: 24,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Fresh Drinks',
-                          style: TextStyle(
-                            fontFamily: 'Pacifico',
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.white,
-                            shadows: [
-                              Shadow(
-                                color: AppColors.shadowMedium,
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
+                          child: IconButton(
+                            icon: Icon(
+                              Icons.shopping_cart,
+                              color: AppColors.white,
+                              size: 24,
+                            ),
+                            onPressed: () {
+                              Navigator.pushNamed(context, '/cart');
+                            },
                           ),
                         ),
                       ],
                     ),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: IconButton(
-                        icon: Icon(
-                          Icons.shopping_cart,
-                          color: AppColors.white,
-                          size: 24,
+                  ),
+                ),
+                Expanded(child: widget.child),
+              ],
+            ),
+            // FloatingActionButton với khả năng kéo thả
+            Positioned(
+              right: 16.0,
+              top: _fabYPosition,
+              child: GestureDetector(
+                onVerticalDragUpdate: (details) {
+                  setState(() {
+                    // Cập nhật vị trí Y dựa trên cử chỉ kéo
+                    _fabYPosition += details.delta.dy;
+                    // Giới hạn vị trí FAB để không vượt ra ngoài màn hình
+                    _fabYPosition = _fabYPosition.clamp(50.0, _maxYPosition);
+                  });
+                },
+                child: FloatingActionButton(
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/chatbot');
+                  },
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: AppColors.primaryGradient,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.shadowMedium,
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
                         ),
-                        onPressed: () {
-                          Navigator.pushNamed(context, '/cart');
-                        },
+                      ],
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.chat_bubble_rounded,
+                        color: AppColors.white,
+                        size: 28,
                       ),
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
-            Expanded(child: child),
           ],
         ),
       ),
-      floatingActionButton: Padding(
-  padding: const EdgeInsets.only(bottom: 12.0), // đẩy lên
-  child: FloatingActionButton(
-    onPressed: () {
-      Navigator.pushNamed(context, '/chatbot');
-    },
-    backgroundColor: Colors.transparent,
-    elevation: 0,
-    child: Container(
-      decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.shadowMedium,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: const Center(
-        child: Icon(
-          Icons.chat_bubble_rounded,
-          color: AppColors.white,
-          size: 28,
-        ),
-      ),
-    ),
-  ),
-),
-floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           gradient: AppColors.primaryGradient,
@@ -176,15 +212,15 @@ floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
   }
 
   Widget _buildNavItem(int index, IconData icon, String label, BuildContext context) {
-    final isSelected = index == currentIndex;
-    
+    final isSelected = index == widget.currentIndex;
+
     return GestureDetector(
       onTap: () => _onTabTapped(context, index),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected 
+          color: isSelected
               ? AppColors.white.withOpacity(0.2)
               : AppColors.transparent,
           borderRadius: BorderRadius.circular(16),
@@ -197,7 +233,7 @@ floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
           children: [
             Icon(
               icon,
-              color: isSelected 
+              color: isSelected
                   ? AppColors.white
                   : AppColors.white.withOpacity(0.7),
               size: 24,
