@@ -17,7 +17,10 @@ class SupportChatService {
       
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        return SupportThread.fromJson(data);
+        if (data['success'] == true && data['data'] != null) {
+          return SupportThread.fromJson(data['data']);
+        }
+        return null;
       } else if (response.statusCode == 404) {
         // Thread chưa tồn tại, tạo mới bằng cách gửi tin nhắn đầu tiên
         return null;
@@ -43,7 +46,10 @@ class SupportChatService {
       
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        return SupportThread.fromJson(data);
+        if (data['success'] == true && data['data'] != null) {
+          return SupportThread.fromJson(data['data']);
+        }
+        return null;
       } else {
         throw Exception('Failed to send message: ${response.statusCode}');
       }

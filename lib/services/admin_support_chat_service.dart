@@ -15,8 +15,14 @@ class AdminSupportChatService {
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
-        return data.map((json) => SupportThread.fromJson(json)).toList();
+        final data = json.decode(response.body);
+        if (data['success'] == true && data['data'] != null) {
+          final threadsData = data['data']['threads'] ?? data['data'];
+          if (threadsData is List) {
+            return threadsData.map((json) => SupportThread.fromJson(json)).toList();
+          }
+        }
+        return [];
       } else {
         throw Exception('Failed to load threads: ${response.statusCode}');
       }
@@ -36,7 +42,10 @@ class AdminSupportChatService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        return SupportThread.fromJson(data);
+        if (data['success'] == true && data['data'] != null) {
+          return SupportThread.fromJson(data['data']);
+        }
+        return null;
       } else {
         throw Exception('Failed to send message: ${response.statusCode}');
       }
@@ -55,7 +64,10 @@ class AdminSupportChatService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        return SupportThread.fromJson(data);
+        if (data['success'] == true && data['data'] != null) {
+          return SupportThread.fromJson(data['data']);
+        }
+        return null;
       } else if (response.statusCode == 404) {
         return null;
       } else {
@@ -77,7 +89,10 @@ class AdminSupportChatService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        return SupportThread.fromJson(data);
+        if (data['success'] == true && data['data'] != null) {
+          return SupportThread.fromJson(data['data']);
+        }
+        return null;
       } else if (response.statusCode == 404) {
         return null;
       } else {

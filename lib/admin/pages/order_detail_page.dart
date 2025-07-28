@@ -108,13 +108,17 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
   List<String> getNextValidStatuses(String currentStatus) {
     switch (currentStatus) {
       case 'pending':
-        return ['confirmed', 'rejected', 'inShipping'];
+        return ['confirmed', 'rejected'];
       case 'confirmed':
         return ['inShipping', 'rejected'];
       case 'inShipping':
-        return ['delivered'];
+        return ['delivered', 'rejected'];
       case 'delivered':
-        return ['completed'];
+        return []; // Completed - no further status changes
+      case 'rejected':
+        return []; // Final state
+      case 'completed':
+        return []; // Final state
       default:
         return [];
     }
@@ -156,127 +160,672 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
     }
   }
 
+  Widget _buildStatusBadge(String status) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: getStatusColor(status).withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: getStatusColor(status).withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            getStatusIcon(status),
+            size: 16,
+            color: getStatusColor(status),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            getStatusLabel(status),
+            style: TextStyle(
+              color: getStatusColor(status),
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoChip({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: Colors.grey[600]),
+          const SizedBox(width: 6),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAddressRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 20, color: Colors.grey[600]),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getPaymentMethodText(String method) {
+    switch (method.toLowerCase()) {
+      case 'cash':
+        return 'Tiền mặt';
+      case 'momo':
+        return 'MoMo';
+      case 'paypal':
+        return 'PayPal';
+      case 'credit_card':
+        return 'Thẻ tín dụng';
+      case 'bank_transfer':
+        return 'Chuyển khoản';
+      default:
+        return method.toUpperCase();
+    }
+  }
+
+  void _showUpdateConfirmDialog(String newStatus) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Xác nhận cập nhật'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  getStatusIcon(order!.orderStatus),
+                  color: getStatusColor(order!.orderStatus),
+                ),
+                const SizedBox(width: 8),
+                Text(getStatusLabel(order!.orderStatus)),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Icon(Icons.arrow_downward, color: Colors.grey),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Icon(
+                  getStatusIcon(newStatus),
+                  color: getStatusColor(newStatus),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  getStatusLabel(newStatus),
+                  style: TextStyle(
+                    color: getStatusColor(newStatus),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Bạn có chắc chắn muốn cập nhật trạng thái đơn hàng?',
+              style: TextStyle(color: Colors.grey[600]),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Hủy'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              updateStatus(newStatus);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: getStatusColor(newStatus),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Xác nhận'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final address = shippingAddress;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Chi tiết đơn hàng')),
+      backgroundColor: Colors.grey[50],
+      appBar: AppBar(
+        title: const Text(
+          'Chi tiết đơn hàng',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: fetchOrder,
+            tooltip: 'Làm mới',
+          ),
+        ],
+      ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(color: Colors.brown))
           : order == null
-              ? const Center(child: Text('Không tìm thấy đơn hàng'))
-              : Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: ListView(
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text('Mã đơn hàng: ${order!.id}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 4),
-                      Text('Ngày đặt: ${_formatDate(order!.orderDate)}'),
-                      const SizedBox(height: 4),
-                      Text('Trạng thái: ${getStatusLabel(order!.orderStatus)}',
-                          style: TextStyle(color: getStatusColor(order!.orderStatus))),
-                      const SizedBox(height: 4),
-                      Text('Phương thức thanh toán: ${order!.paymentMethod.toUpperCase()}'),
-                      const SizedBox(height: 4),
-                      Text('Trạng thái thanh toán: ${order!.paymentStatus}'),
-                      if (order!.voucherCode != null && order!.voucherCode!.isNotEmpty)
-                        Text('Mã giảm giá: ${order!.voucherCode}', style: const TextStyle(color: Colors.green)),
-
-                      const Divider(height: 32),
-                      const Text('Sản phẩm:', style: TextStyle(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 8),
-                      ...order!.cartItems.map(
-                        (item) => ListTile(
-                          leading: Image.network(
-                            item.image,
-                            width: 50,
-                            height: 50,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Container(
-                              width: 50,
-                              height: 50,
-                              color: Colors.grey[200],
-                              child: const Icon(Icons.image_not_supported),
-                            ),
+                      const Icon(
+                        Icons.error_outline,
+                        size: 64,
+                        color: Colors.red,
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Không tìm thấy đơn hàng',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.red,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Quay lại'),
+                      ),
+                    ],
+                  ),
+                )
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Order Header Card
+                      Card(
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Đơn hàng #${order!.id.substring(0, 8).toUpperCase()}',
+                                          style: const TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.black87,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Ngày đặt: ${_formatDate(order!.orderDate)}',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  _buildStatusBadge(order!.orderStatus),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              const Divider(),
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  Flexible(
+                                    child: _buildInfoChip(
+                                      icon: Icons.payment,
+                                      label: 'Thanh toán',
+                                      value: _getPaymentMethodText(order!.paymentMethod),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Flexible(
+                                    child: _buildInfoChip(
+                                      icon: Icons.account_balance_wallet,
+                                      label: 'Trạng thái TT',
+                                      value: order!.paymentStatus,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (order!.voucherCode != null && order!.voucherCode!.isNotEmpty) ...[
+                                const SizedBox(height: 12),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: Colors.green.withOpacity(0.3)),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.local_offer, size: 16, color: Colors.green),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'Mã giảm giá: ${order!.voucherCode}',
+                                        style: const TextStyle(
+                                          color: Colors.green,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
-                          title: Text(item.title),
-                          subtitle: Text('Giá: ${_formatCurrency(item.price)} | SL: ${item.quantity}'),
                         ),
                       ),
 
-                      const Divider(height: 32),
-                      const Text('Địa chỉ giao hàng:', style: TextStyle(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 4),
-                      if (address != null) ...[
-                        Text('Địa chỉ: ${address.address ?? '(trống)'}'),
-                        Text('Thành phố: ${address.city ?? '(trống)'}'),
-                        Text('Mã vùng: ${address.pincode ?? '(trống)'}'),
-                        Text('SĐT: ${address.phone ?? '(trống)'}'),
-                        if (address.notes != null && address.notes!.isNotEmpty)
-                          Text('Ghi chú: ${address.notes!}', style: const TextStyle(color: Colors.blueGrey)),
-                      ] else ...[
-                        Text('Không có thông tin địa chỉ hoặc địa chỉ rỗng', style: TextStyle(color: Colors.red)),
-                      ],
-
-                      const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('Tổng tiền:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                          Text('${_formatCurrency(order!.totalAmount)}',
-                              style: const TextStyle(fontSize: 16, color: Colors.brown, fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-
-                      const Divider(height: 32),
-                      const Text('Cập nhật trạng thái đơn hàng', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Icon(getStatusIcon(order!.orderStatus), color: getStatusColor(order!.orderStatus), size: 32),
-                          const SizedBox(width: 12),
-                          Text(
-                            getStatusLabel(order!.orderStatus),
-                            style: TextStyle(
-                              color: getStatusColor(order!.orderStatus),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 20,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Chọn trạng thái tiếp theo để cập nhật. Chỉ các trạng thái hợp lệ mới được phép chuyển.',
-                        style: TextStyle(color: Colors.grey[600], fontSize: 13),
-                      ),
                       const SizedBox(height: 16),
-                      Builder(
-                        builder: (context) {
-                          final nextStatuses = getNextValidStatuses(order!.orderStatus);
-                          if (nextStatuses.isEmpty) {
-                            return const Text('Đơn hàng đã ở trạng thái cuối cùng.', style: TextStyle(color: Colors.grey));
-                          }
-                          return Wrap(
-                            spacing: 16,
-                            runSpacing: 12,
-                            children: nextStatuses.map((status) {
-                              return ElevatedButton.icon(
-                                icon: Icon(getStatusIcon(status)),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: getStatusColor(status),
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                                  textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+
+                      // Products Card
+                      Card(
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.shopping_bag, color: Colors.brown),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Sản phẩm (${order!.cartItems.length})',
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              ...order!.cartItems.map(
+                                (item) => Container(
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[50],
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: Image.network(
+                                          item.image,
+                                          width: 60,
+                                          height: 60,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, __, ___) => Container(
+                                            width: 60,
+                                            height: 60,
+                                            decoration: BoxDecoration(
+                                              color: Colors.grey[200],
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: const Icon(Icons.image_not_supported),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              item.title,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 16,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              'Số lượng: ${item.quantity}',
+                                              style: TextStyle(
+                                                color: Colors.grey[600],
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Text(
+                                        _formatCurrency(item.price),
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                          color: Colors.brown,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                                onPressed: () => updateStatus(status),
-                                label: Text(getStatusLabel(status)),
-                              );
-                            }).toList(),
-                          );
-                        },
+                              ),
+                              const Divider(),
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    'Tổng tiền:',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Text(
+                                    _formatCurrency(order!.totalAmount),
+                                    style: const TextStyle(
+                                      fontSize: 20,
+                                      color: Colors.brown,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Shipping Address Card
+                      Card(
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.location_on, color: Colors.brown),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'Địa chỉ giao hàng',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              if (address != null) ...[
+                                _buildAddressRow(Icons.home, 'Địa chỉ', address.address ?? '(Trống)'),
+                                _buildAddressRow(Icons.location_city, 'Thành phố', address.city ?? '(Trống)'),
+                                _buildAddressRow(Icons.pin_drop, 'Mã vùng', address.pincode ?? '(Trống)'),
+                                _buildAddressRow(Icons.phone, 'Số điện thoại', address.phone ?? '(Trống)'),
+                                if (address.notes != null && address.notes!.isNotEmpty)
+                                  _buildAddressRow(Icons.note, 'Ghi chú', address.notes!),
+                              ] else ...[
+                                Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: Colors.red.withOpacity(0.3)),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.warning, color: Colors.red),
+                                      const SizedBox(width: 12),
+                                      const Expanded(
+                                        child: Text(
+                                          'Không có thông tin địa chỉ giao hàng',
+                                          style: TextStyle(color: Colors.red),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Status Update Card
+                      Card(
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.update, color: Colors.brown),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'Cập nhật trạng thái',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              
+                              // Current Status
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: getStatusColor(order!.orderStatus).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: getStatusColor(order!.orderStatus).withOpacity(0.3),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      getStatusIcon(order!.orderStatus),
+                                      color: getStatusColor(order!.orderStatus),
+                                      size: 32,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'Trạng thái hiện tại:',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        Text(
+                                          getStatusLabel(order!.orderStatus),
+                                          style: TextStyle(
+                                            color: getStatusColor(order!.orderStatus),
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 18,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              
+                              const SizedBox(height: 16),
+                              
+                              // Next Status Options
+                              Builder(
+                                builder: (context) {
+                                  final nextStatuses = getNextValidStatuses(order!.orderStatus);
+                                  if (nextStatuses.isEmpty) {
+                                    return Container(
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.check_circle, color: Colors.grey[600]),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Text(
+                                              'Đơn hàng đã ở trạng thái cuối cùng',
+                                              style: TextStyle(
+                                                color: Colors.grey[600],
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }
+                                  
+                                  return Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Chuyển sang trạng thái:',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.grey[700],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Wrap(
+                                        spacing: 12,
+                                        runSpacing: 12,
+                                        children: nextStatuses.map((status) {
+                                          return SizedBox(
+                                            width: double.infinity,
+                                            child: ElevatedButton.icon(
+                                              icon: Icon(getStatusIcon(status)),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: getStatusColor(status),
+                                                foregroundColor: Colors.white,
+                                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(12),
+                                                ),
+                                                elevation: 2,
+                                              ),
+                                              onPressed: () => _showUpdateConfirmDialog(status),
+                                              label: Text(
+                                                getStatusLabel(status),
+                                                style: const TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        }).toList(),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ],
                   ),

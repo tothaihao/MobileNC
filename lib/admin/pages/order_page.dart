@@ -274,18 +274,6 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
               ),
             ),
           IconButton(
-            icon: const Icon(Icons.people),
-            tooltip: 'Quản lý người dùng',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const UserPage(),
-                ),
-              );
-            },
-          ),
-          IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: fetchOrders,
           ),
@@ -387,6 +375,195 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
               ],
             ),
           ),
+
+          // Quick User Filter Section
+          if (users.isNotEmpty && selectedUserId == 'all')
+            Container(
+              color: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.people_outline,
+                        size: 18,
+                        color: Colors.brown,
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Xem đơn hàng theo khách hàng:',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: 100,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _getUniqueUsersWithOrders().length,
+                      itemBuilder: (context, index) {
+                        final userInfo = _getUniqueUsersWithOrders()[index];
+                        final user = userInfo['user'] as User;
+                        final orderCount = userInfo['orderCount'] as int;
+                        
+                        return Container(
+                          width: 140,
+                          margin: const EdgeInsets.only(right: 12),
+                          child: Card(
+                            elevation: 2,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: InkWell(
+                              onTap: () => _onUserChanged(user.id),
+                              borderRadius: BorderRadius.circular(8),
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        CircleAvatar(
+                                          radius: 12,
+                                          backgroundColor: Colors.brown.withOpacity(0.1),
+                                          child: Text(
+                                            user.userName.isNotEmpty 
+                                                ? user.userName[0].toUpperCase() 
+                                                : 'U',
+                                            style: TextStyle(
+                                              color: Colors.brown,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                        const Spacer(),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: Colors.brown,
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          child: Text(
+                                            '$orderCount',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      user.userName,
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.black87,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '$orderCount đơn hàng',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          
+          // Selected User Info
+          if (selectedUserId != 'all')
+            Container(
+              color: Colors.brown.withOpacity(0.05),
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 20,
+                    backgroundColor: Colors.brown.withOpacity(0.2),
+                    child: Text(
+                      users[selectedUserId]?.userName.isNotEmpty == true 
+                          ? users[selectedUserId]!.userName[0].toUpperCase() 
+                          : 'U',
+                      style: const TextStyle(
+                        color: Colors.brown,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Đơn hàng của: ${users[selectedUserId]?.userName ?? "N/A"}',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.brown,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          users[selectedUserId]?.email ?? '',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.brown,
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: Text(
+                      '${orders.where((o) => o.userId == selectedUserId).length} đơn hàng',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.brown),
+                    onPressed: () => _onUserChanged('all'),
+                    tooltip: 'Xóa lọc người dùng',
+                  ),
+                ],
+              ),
+            ),
           
           // Status Tabs
           Container(
@@ -520,6 +697,32 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
   int _getStatusCount(String statusKey) {
     if (statusKey == 'all') return orders.length;
     return orders.where((order) => order.orderStatus == statusKey).length;
+  }
+
+  List<Map<String, dynamic>> _getUniqueUsersWithOrders() {
+    Map<String, int> userOrderCounts = {};
+    
+    // Count orders for each user
+    for (Order order in orders) {
+      userOrderCounts[order.userId] = (userOrderCounts[order.userId] ?? 0) + 1;
+    }
+    
+    // Convert to list with user info and order count
+    List<Map<String, dynamic>> result = [];
+    for (String userId in userOrderCounts.keys) {
+      final user = users[userId];
+      if (user != null) {
+        result.add({
+          'user': user,
+          'orderCount': userOrderCounts[userId]!,
+        });
+      }
+    }
+    
+    // Sort by order count (descending)
+    result.sort((a, b) => (b['orderCount'] as int).compareTo(a['orderCount'] as int));
+    
+    return result;
   }
 
   List<DropdownMenuItem<String>> _buildUserDropdownItems() {

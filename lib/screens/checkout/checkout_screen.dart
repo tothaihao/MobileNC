@@ -831,13 +831,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         updatedAt: order.updatedAt,
       );
 
-      // Convert VND to USD (approximate rate 1 USD = 24,000 VND)
-      final usdAmount = (finalTotal / 24000).toDouble();
+      // Use proper currency conversion helper instead of hard-coded rate
+      final usdAmount = CurrencyHelper.vndToUsd(finalTotal);
       
       final approvalUrl = await PayPalService.createPayPalPayment(
-        amount: double.parse(usdAmount.toStringAsFixed(2)), // Round to 2 decimal places
+        amount: usdAmount,
         currency: 'USD',
-        description: 'Coffee Shop Order Payment',
+        description: 'Coffee Shop Order #${updatedOrder.id}',
+        orderId: updatedOrder.id, // ✅ Pass orderId để liên kết
       );
 
       Navigator.of(context).pop(); // Close loading
@@ -853,7 +854,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               builder: (context) => PayPalWebViewScreen(
                 approvalUrl: approvalUrl,
                 orderId: updatedOrder.id,
-                amount: double.parse(usdAmount.toStringAsFixed(2)),
+                amount: usdAmount,
                 onPaymentComplete: (success, error) async {
                   if (success) {
                     // Payment successful

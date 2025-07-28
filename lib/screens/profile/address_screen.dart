@@ -108,62 +108,108 @@ class _AddressScreenState extends State<AddressScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(isEdit ? 'Sửa địa chỉ' : 'Thêm địa chỉ'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: streetController,
-                decoration: const InputDecoration(labelText: 'Địa chỉ'),
-                maxLines: 1,
-              ),
-              DistrictWardPicker(
-                initialDistrict: selectedDistrict,
-                initialWard: selectedWard,
-                onChanged: (district, ward) {
-                  selectedDistrict = district;
-                  selectedWard = ward;
-                  districtController.text = district;
-                  wardController.text = ward;
-                },
-              ),
-              TextFormField(
-                controller: districtController,
-                decoration: const InputDecoration(labelText: 'Quận/Huyện'),
-                maxLines: 1,
-              ),
-              TextField(
-                controller: cityController,
-                decoration: const InputDecoration(labelText: 'Tỉnh/Thành phố'),
-                maxLines: 1,
-              ),
-              TextField(
-                controller: phoneController,
-                decoration: const InputDecoration(labelText: 'Số điện thoại'),
-                maxLines: 1,
-                keyboardType: TextInputType.phone,
-              ),
-              TextField(
-                controller: notesController,
-                decoration: const InputDecoration(labelText: 'Ghi chú (tuỳ chọn)'),
-                maxLines: 2,
-              ),
-            ],
+        contentPadding: const EdgeInsets.all(24),
+        content: SizedBox(
+          width: MediaQuery.of(context).size.width * 0.9,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: streetController,
+                  decoration: const InputDecoration(
+                    labelText: 'Địa chỉ chi tiết *',
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                  maxLines: 1,
+                ),
+                const SizedBox(height: 16),
+                DistrictWardPicker(
+                  initialDistrict: selectedDistrict,
+                  initialWard: selectedWard,
+                  onChanged: (district, ward) {
+                    selectedDistrict = district;
+                    selectedWard = ward;
+                    districtController.text = district;
+                    wardController.text = ward;
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: cityController,
+                  decoration: const InputDecoration(
+                    labelText: 'Tỉnh/Thành phố',
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                  maxLines: 1,
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: phoneController,
+                  decoration: const InputDecoration(
+                    labelText: 'Số điện thoại *',
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                  maxLines: 1,
+                  keyboardType: TextInputType.phone,
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: notesController,
+                  decoration: const InputDecoration(
+                    labelText: 'Ghi chú (tuỳ chọn)',
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                  maxLines: 2,
+                ),
+              ],
+            ),
           ),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy')),
           ElevatedButton(
             onPressed: () async {
+              // Validation
+              if (streetController.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Vui lòng nhập địa chỉ chi tiết'), backgroundColor: Colors.red),
+                );
+                return;
+              }
+              if (selectedDistrict == null || selectedDistrict!.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Vui lòng chọn quận/huyện'), backgroundColor: Colors.red),
+                );
+                return;
+              }
+              if (selectedWard == null || selectedWard!.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Vui lòng chọn phường/xã'), backgroundColor: Colors.red),
+                );
+                return;
+              }
+              if (phoneController.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Vui lòng nhập số điện thoại'), backgroundColor: Colors.red),
+                );
+                return;
+              }
+
               final newAddress = Address(
                 id: address?.id ?? '',
                 userId: userId,
-                streetAddress: streetController.text,
-                ward: wardController.text,
-                district: districtController.text,
-                city: cityController.text,
-                phone: phoneController.text,
-                notes: notesController.text.isNotEmpty ? notesController.text : null,
+                streetAddress: streetController.text.trim(),
+                ward: selectedWard!,
+                district: selectedDistrict!,
+                city: cityController.text.trim().isNotEmpty ? cityController.text.trim() : 'TP. Hồ Chí Minh',
+                phone: phoneController.text.trim(),
+                notes: notesController.text.trim().isNotEmpty ? notesController.text.trim() : null,
               );
               final provider = Provider.of<AddressProvider>(context, listen: false);
               bool success;
@@ -172,7 +218,16 @@ class _AddressScreenState extends State<AddressScreen> {
               } else {
                 success = await provider.addAddress(newAddress);
               }
-              if (success && context.mounted) Navigator.pop(context);
+              if (success && context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(isEdit ? 'Cập nhật địa chỉ thành công' : 'Thêm địa chỉ thành công'), backgroundColor: Colors.green),
+                );
+                Navigator.pop(context);
+              } else if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(isEdit ? 'Lỗi cập nhật địa chỉ' : 'Lỗi thêm địa chỉ'), backgroundColor: Colors.red),
+                );
+              }
             },
             child: Text(isEdit ? 'Lưu' : 'Thêm'),
           ),

@@ -77,13 +77,15 @@ class _PayPalWebViewScreenState extends State<PayPalWebViewScreen> {
     }
     
     // Check if user approved payment (success callback)
-    if (url.contains('mobilenc.coffee/payment/success') || 
+    if (url.contains('mobilenc://payment/success') || 
+        url.contains('10.0.2.2:5000') && url.contains('success') ||
         url.contains('success') && url.contains('paymentId')) {
       print('✅ PayPal payment approved, extracting details...');
       _extractPaymentDetails(url);
     }
     // Check if user cancelled payment
-    else if (url.contains('mobilenc.coffee/payment/cancel') || 
+    else if (url.contains('mobilenc://payment/cancel') || 
+             url.contains('10.0.2.2:5000') && url.contains('cancel') ||
              url.contains('cancel') || url.contains('cancelled')) {
       print('❌ PayPal payment cancelled by user');
       if (!isProcessing) {
@@ -176,8 +178,20 @@ class _PayPalWebViewScreenState extends State<PayPalWebViewScreen> {
       }
 
       if (success) {
-        print('✅ PayPal payment captured successfully');
-        widget.onPaymentComplete(true, null);
+        // ✅ Cập nhật order sau khi capture thành công
+        final orderUpdated = await PayPalService.updateOrderAfterPayment(
+          orderId: widget.orderId,
+          paymentId: paymentId,
+          payerId: payerId,
+        );
+
+        if (orderUpdated) {
+          print('✅ PayPal payment captured and order updated successfully');
+          widget.onPaymentComplete(true, null);
+        } else {
+          print('⚠️ PayPal payment captured but order update failed');
+          widget.onPaymentComplete(true, null); // Still success for user
+        }
       } else {
         print('❌ PayPal payment capture failed');
         widget.onPaymentComplete(false, 'Xác nhận thanh toán thất bại');

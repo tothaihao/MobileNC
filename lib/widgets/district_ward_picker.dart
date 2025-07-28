@@ -61,7 +61,11 @@ class _DistrictWardPickerState extends State<DistrictWardPicker> {
         Expanded(
           child: DropdownButtonFormField<District>(
             value: _selectedDistrict,
-            decoration: const InputDecoration(labelText: 'Quận/Huyện'),
+            decoration: const InputDecoration(
+              labelText: 'Quận/Huyện *',
+              border: OutlineInputBorder(),
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            ),
             items: _districts
                 .map((d) => DropdownMenuItem(
                       value: d,
@@ -83,7 +87,11 @@ class _DistrictWardPickerState extends State<DistrictWardPicker> {
         Expanded(
           child: DropdownButtonFormField<Ward>(
             value: _selectedWard,
-            decoration: const InputDecoration(labelText: 'Phường/Xã'),
+            decoration: const InputDecoration(
+              labelText: 'Phường/Xã *',
+              border: OutlineInputBorder(),
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            ),
             items: (_selectedDistrict?.wards ?? [])
                 .map((w) => DropdownMenuItem(
                       value: w,
