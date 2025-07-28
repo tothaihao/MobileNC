@@ -170,8 +170,8 @@ class _DashboardPageState extends State<DashboardPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // FIXED: Responsive StatisticCards using Wrap instead of Row
-                  _buildResponsiveStatsSection(),
+                  // FIXED: Responsive StatisticCards using GridView
+                  _buildStatsGrid(),
                   
                   const SizedBox(height: 24),
 
@@ -286,27 +286,8 @@ class _DashboardPageState extends State<DashboardPage> {
 
                   const SizedBox(height: 24),
 
-                  // ✅ THÊM BIỂU ĐỒ DOANH THU
-                  const Card(
-                    margin: EdgeInsets.all(0),
-                    child: Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Biểu đồ Doanh thu theo Tháng',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          SizedBox(height: 16),
-                          SalesChart(),
-                        ],
-                      ),
-                    ),
-                  ),
+                  // ✅ THÊM BIỂU ĐỒ DOANH THU (SalesChart đã có title built-in)
+                  const SalesChart(), // 🔧 Bỏ Card wrapper để tránh duplicate title
 
                   const SizedBox(height: 24),
                 ],
@@ -637,6 +618,64 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
         ],
       ),
+    );
+  }
+
+  // 🔧 FIXED: Simple Grid Layout for Stats Cards
+  Widget _buildStatsGrid() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final crossAxisCount = screenWidth > 600 ? 3 : 2; // 3 columns on tablet, 2 on mobile
+    
+    final List<StatisticCard> statsCards = [
+      StatisticCard(
+        title: 'Doanh thu hôm nay',
+        value: _formatCurrency(todayRevenue),
+        icon: Icons.today,
+        iconColor: Colors.green,
+      ),
+      StatisticCard(
+        title: 'Đơn hàng hôm nay',
+        value: '$todayOrders',
+        icon: Icons.shopping_cart_outlined,
+        iconColor: Colors.blue,
+      ),
+      StatisticCard(
+        title: 'Tổng doanh thu',
+        value: _formatCurrency(totalRevenue),
+        icon: Icons.attach_money,
+        iconColor: Colors.green,
+      ),
+      StatisticCard(
+        title: 'Tổng đơn hàng',
+        value: '$orderCount',
+        icon: Icons.shopping_cart,
+        iconColor: Colors.blue,
+      ),
+      StatisticCard(
+        title: 'Số người dùng',
+        value: '$userCount',
+        icon: Icons.people,
+        iconColor: Colors.purple,
+      ),
+      StatisticCard(
+        title: 'Số admin',
+        value: '$adminCount',
+        icon: Icons.admin_panel_settings,
+        iconColor: Colors.red,
+      ),
+    ];
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 1.6, // 🔧 Tỷ lệ để card không quá cao
+      ),
+      itemCount: statsCards.length,
+      itemBuilder: (context, index) => statsCards[index],
     );
   }
 }

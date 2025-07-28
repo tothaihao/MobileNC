@@ -194,7 +194,7 @@ class _UserPageState extends State<UserPage> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => UserDetailPage(user: updatedUser),
+                builder: (_) => UserDetailPage(userId: updatedUser.id),
               ),
             );
           }
@@ -281,10 +281,21 @@ class _UserPageState extends State<UserPage> {
                             elevation: 2,
                             child: ListTile(
                               onTap: () {
+                                // 🔧 FIX: Kiểm tra userId hợp lệ trước khi navigate
+                                if (user.id.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Lỗi: ID người dùng không hợp lệ'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                  return;
+                                }
+                                
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) => UserDetailPage(user: user),
+                                    builder: (_) => UserDetailPage(userId: user.id),
                                   ),
                                 );
                               },

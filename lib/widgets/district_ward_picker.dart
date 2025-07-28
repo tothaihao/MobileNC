@@ -69,7 +69,12 @@ class _DistrictWardPickerState extends State<DistrictWardPicker> {
             items: _districts
                 .map((d) => DropdownMenuItem(
                       value: d,
-                      child: Text(d.name),
+                      child: Text(
+                        d.name,
+                        overflow: TextOverflow.ellipsis, // Prevent overflow
+                        maxLines: 1, // Ensure single line
+                        style: const TextStyle(fontSize: 14), // Consistent font size
+                      ),
                     ))
                 .toList(),
             onChanged: (district) {
@@ -95,7 +100,12 @@ class _DistrictWardPickerState extends State<DistrictWardPicker> {
             items: (_selectedDistrict?.wards ?? [])
                 .map((w) => DropdownMenuItem(
                       value: w,
-                      child: Text(w.name),
+                      child: Text(
+                        w.name,
+                        overflow: TextOverflow.ellipsis, // Prevent overflow
+                        maxLines: 1, // Ensure single line
+                        style: const TextStyle(fontSize: 14), // Consistent font size
+                      ),
                     ))
                 .toList(),
             onChanged: (ward) {

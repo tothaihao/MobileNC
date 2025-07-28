@@ -211,6 +211,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                               '${address.streetAddress}, ${address.ward}, ${address.district}, ${address.city}',
                               overflow: TextOverflow.ellipsis,
                               maxLines: 1,
+                              style: const TextStyle(fontSize: 14), // Consistent font size
                             ),
                     )).toList(),
                     onChanged: (value) {
@@ -871,7 +872,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           duration: Duration(seconds: 3),
                         ),
                       );
-                      Navigator.pushReplacementNamed(context, '/success');
+                      // 🔧 FIX: Navigate to success screen properly  
+                      Navigator.pushNamedAndRemoveUntil(
+                        context, 
+                        '/success',
+                        (route) => false, // Remove all previous routes
+                      );
                     }
                   } else {
                     // Payment failed

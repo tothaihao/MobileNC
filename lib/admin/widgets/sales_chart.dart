@@ -54,13 +54,18 @@ class _SalesChartState extends State<SalesChart> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Biểu đồ Doanh thu theo $selectedPeriod',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                Expanded( // 🔧 Wrap với Expanded
+                  child: Text(
+                    'Biểu đồ Doanh thu theo $selectedPeriod',
+                    style: const TextStyle(
+                      fontSize: 16, // 🔧 Giảm font size
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 2, // 🔧 Cho phép xuống dòng
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                const SizedBox(width: 8), // 🔧 Thêm spacing
                 DropdownButton<String>(
                   value: selectedPeriod,
                   items: const [
@@ -93,8 +98,10 @@ class _SalesChartState extends State<SalesChart> {
                 ),
               )
             else
-              SizedBox(
-                height: 300,
+              Container(
+                height: 280, // 🔧 Giảm height
+                width: double.infinity,
+                padding: const EdgeInsets.only(right: 8), // 🔧 Thêm padding
                 child: BarChart(
                   BarChartData(
                     alignment: BarChartAlignment.spaceAround,
@@ -117,11 +124,16 @@ class _SalesChartState extends State<SalesChart> {
                       leftTitles: AxisTitles(
                         sideTitles: SideTitles(
                           showTitles: true,
-                          reservedSize: 60,
+                          reservedSize: 45, // 🔧 Giảm reserved size
+                          interval: _getMaxY() / 4, // 🔧 Thêm interval để giảm số labels
                           getTitlesWidget: (value, meta) {
+                            if (value == 0) return const Text('');
                             return Text(
                               '${(value / 1000000).toStringAsFixed(0)}M',
-                              style: const TextStyle(fontSize: 10),
+                              style: const TextStyle(
+                                fontSize: 8, // 🔧 Giảm font size
+                                color: Colors.grey,
+                              ),
                             );
                           },
                         ),
@@ -129,14 +141,28 @@ class _SalesChartState extends State<SalesChart> {
                       bottomTitles: AxisTitles(
                         sideTitles: SideTitles(
                           showTitles: true,
+                          reservedSize: 35, // 🔧 Tăng reserved size cho bottom
                           getTitlesWidget: (value, meta) {
                             int index = value.toInt();
                             if (index >= 0 && index < salesData.length) {
+                              String name = salesData[index]['name'];
+                              // 🔧 Rút gọn tên tháng
+                              if (name.startsWith('Tháng ')) {
+                                name = 'T${name.substring(6)}';
+                              }
                               return Padding(
-                                padding: const EdgeInsets.only(top: 8),
-                                child: Text(
-                                  salesData[index]['name'],
-                                  style: const TextStyle(fontSize: 10),
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Transform.rotate(
+                                  angle: -0.5, // 🔧 Xoay text 30 độ
+                                  child: Text(
+                                    name,
+                                    style: const TextStyle(
+                                      fontSize: 8, // 🔧 Giảm font size
+                                      color: Colors.grey,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                               );
                             }

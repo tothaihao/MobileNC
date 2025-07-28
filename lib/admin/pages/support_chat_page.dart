@@ -158,6 +158,8 @@ class _SupportChatPageState extends State<SupportChatPage> {
                                               style: TextStyle(
                                                 fontWeight: hasUnreadFromUser ? FontWeight.bold : FontWeight.normal,
                                               ),
+                                              overflow: TextOverflow.ellipsis, // Prevent overflow
+                                              maxLines: 1, // Ensure single line
                                             ),
                                             subtitle: Column(
                                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -165,6 +167,8 @@ class _SupportChatPageState extends State<SupportChatPage> {
                                                 Text(
                                                   thread.userEmail,
                                                   style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                                  overflow: TextOverflow.ellipsis, // Prevent overflow
+                                                  maxLines: 1, // Ensure single line
                                                 ),
                                                 if (lastMessage != null)
                                                   Text(

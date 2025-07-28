@@ -78,14 +78,18 @@ class _PayPalWebViewScreenState extends State<PayPalWebViewScreen> {
     
     // Check if user approved payment (success callback)
     if (url.contains('mobilenc://payment/success') || 
-        url.contains('10.0.2.2:5000') && url.contains('success') ||
-        url.contains('success') && url.contains('paymentId')) {
+        url.contains('/paypal/success') ||
+        (url.contains('10.0.2.2:5000') && url.contains('success')) ||
+        (url.contains('mobilenc.onrender.com') && url.contains('success')) ||
+        (url.contains('success') && url.contains('paymentId'))) {
       print('✅ PayPal payment approved, extracting details...');
       _extractPaymentDetails(url);
     }
     // Check if user cancelled payment
     else if (url.contains('mobilenc://payment/cancel') || 
-             url.contains('10.0.2.2:5000') && url.contains('cancel') ||
+             url.contains('/paypal/cancel') ||
+             (url.contains('10.0.2.2:5000') && url.contains('cancel')) ||
+             (url.contains('mobilenc.onrender.com') && url.contains('cancel')) ||
              url.contains('cancel') || url.contains('cancelled')) {
       print('❌ PayPal payment cancelled by user');
       if (!isProcessing) {

@@ -29,20 +29,36 @@ class Order {
 
   factory Order.fromJson(Map<String, dynamic> json) {
     return Order(
-      id: json['_id'] ?? '',
+      id: json['_id'] ?? json['id'] ?? '',
       userId: json['userId'] ?? '',
       addressId: json['addressId'] ?? '', // luôn là String
       orderStatus: json['orderStatus'] ?? 'pending',
       paymentMethod: json['paymentMethod'] ?? 'cash',
       paymentStatus: json['paymentStatus'] ?? 'pending',
-      totalAmount: json['totalAmount'] ?? 0,
+      totalAmount: (json['totalAmount'] is int) ? json['totalAmount'] : 
+                   (json['totalAmount'] is double) ? json['totalAmount'].toInt() : 0,
       voucherCode: json['voucherCode'],
-      orderDate: DateTime.tryParse(json['orderDate'] ?? '') ?? DateTime.now(),
+      // 🔧 FIX: Safe date parsing với fallback
+      orderDate: _parseDate(json['orderDate']) ?? 
+                 _parseDate(json['createdAt']) ?? 
+                 DateTime.now(),
       cartItems: (json['cartItems'] as List<dynamic>? ?? [])
           .map((item) => CartItem.fromJson(item))
           .toList(),
       address: null, // luôn null, chỉ lấy qua API riêng
     );
+  }
+
+  // 🔧 Helper method để parse date an toàn
+  static DateTime? _parseDate(dynamic dateValue) {
+    if (dateValue == null) return null;
+    if (dateValue is String) {
+      return DateTime.tryParse(dateValue);
+    }
+    if (dateValue is int) {
+      return DateTime.fromMillisecondsSinceEpoch(dateValue);
+    }
+    return null;
   }
 
   Map<String, dynamic> toJson() {

@@ -78,15 +78,52 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
 
   Future<void> _fetchUsers() async {
     try {
+      print('DEBUG: Fetching users from ${AppConfig.adminUsers}');
       final response = await http.get(Uri.parse(AppConfig.adminUsers));
+      print('DEBUG: Users API status: ${response.statusCode}');
+      print('DEBUG: Users API body: ${response.body}');
+      
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final List<dynamic> usersJson = data['data'] ?? data;
+        print('DEBUG: Users API response: $data');
+        
+        List<dynamic> usersJson = [];
+        
+        // 🔧 FIX: Handle backend response format {"success":true,"data":[...]}
+        if (data is Map<String, dynamic>) {
+          if (data['success'] == true && data['data'] is List) {
+            usersJson = data['data'] as List;
+            print('DEBUG: Using data.data format, found ${usersJson.length} users');
+          } else if (data['data'] is List) {
+            usersJson = data['data'] as List;
+            print('DEBUG: Using data format, found ${usersJson.length} users');
+          } else {
+            print('DEBUG: Unexpected response format: $data');
+          }
+        } else if (data is List) {
+          usersJson = data;
+          print('DEBUG: Direct array format, found ${usersJson.length} users');
+        }
+        
+        print('DEBUG: Found ${usersJson.length} users to process');
         
         for (var userJson in usersJson) {
-          final user = User.fromJson(userJson);
-          users[user.id] = user;
+          try {
+            final user = User.fromJson(userJson);
+            if (user.id.isNotEmpty) {
+              users[user.id] = user;
+              print('DEBUG: Added user ${user.id} -> ${user.userName}');
+            } else {
+              print('DEBUG: Skipped user with empty ID: $userJson');
+            }
+          } catch (e) {
+            print('DEBUG: Error parsing user $userJson: $e');
+          }
         }
+        
+        print('DEBUG: Total users in map: ${users.length}');
+      } else {
+        print('DEBUG: Users API failed with status ${response.statusCode}');
       }
     } catch (e) {
       print('DEBUG: Error fetching users: $e');
