@@ -42,17 +42,20 @@ const PORT = process.env.PORT || 5000;
 app.use(
   cors({
     origin: function (origin, callback) {
-      const allowedOrigins = [
-        "http://localhost:5173",
-         // thêm các port có thể dùng
-      ];
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      // Allow all localhost origins and production
+      if (origin.startsWith('http://localhost:') || 
+          origin.startsWith('http://127.0.0.1:') ||
+          origin === 'https://mobilenc.onrender.com') {
+        return callback(null, true);
       }
+      
+      return callback(new Error('Not allowed by CORS'));
     },
-    methods: ["GET", "POST", "DELETE", "PUT"],
+    credentials: true,
+    methods: ["GET", "POST", "DELETE", "PUT", "PATCH", "OPTIONS"],
     allowedHeaders: [
       "Content-Type",
       "Authorization",
@@ -60,7 +63,6 @@ app.use(
       "Expires",
       "Pragma",
     ],
-    credentials: true,
   })
 );
 
@@ -90,7 +92,8 @@ app.use("/api/shop/review", shopReviewRouter);
 
 app.use("/api/common/feature", commonFeatureRouter);
 app.use('/api/common/payment', momoPaymentRouter);
+app.use('/api/common/payment/paypal', require('./routes/common/paypalPayment-routes'));
 app.use('/api', supportRequestRouter);
-app.use('/api', supportChatRouter);
+app.use('/api/common/supportChat', supportChatRouter);
 
 app.listen(PORT, () => console.log(`Server is now running on port ${PORT}`));

@@ -13,38 +13,16 @@ const {
 
 const createOrder = async (req, res) => {
   try {
-    const { userId, cartItems, addressId, paymentMethod, voucherCode } =
-      req.body;
+    const {
+      userId,
+      cartItems,
+      addressId,
+      paymentMethod,
+      voucherCode
+    } = req.body;
 
-    if (
-      !userId ||
-      !cartItems ||
-      !cartItems.length ||
-      !addressId ||
-      !paymentMethod
-    ) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Thiếu thông tin đơn hàng!" });
-    }
-
-    // Kiểm tra tồn kho trước khi xử lý thanh toán
-    for (const item of cartItems) {
-      const product = await Product.findById(item.productId);
-
-      if (!product) {
-        return res.status(400).json({
-          success: false,
-          message: `Sản phẩm với ID ${item.productId} không tồn tại.`,
-        });
-      }
-
-      if (product.totalStock < item.quantity) {
-        return res.status(400).json({
-          success: false,
-          message: `Sản phẩm "${product.title}" chỉ còn ${product.totalStock} sản phẩm trong kho.`,
-        });
-      }
+    if (!userId || !cartItems || !cartItems.length || !addressId || !paymentMethod) {
+      return res.status(400).json({ success: false, message: "Thiếu thông tin đơn hàng!" });
     }
 
     // Tính tổng
@@ -55,15 +33,9 @@ const createOrder = async (req, res) => {
 
     // Xử lý voucher
     if (voucherCode) {
-      const voucher = await Voucher.findOne({
-        code: voucherCode.toUpperCase(),
-      });
+      const voucher = await Voucher.findOne({ code: voucherCode.toUpperCase() });
 
-      if (
-        !voucher ||
-        !voucher.isActive ||
-        (voucher.expiredAt && new Date(voucher.expiredAt) < new Date())
-      ) {
+      if (!voucher || !voucher.isActive || (voucher.expiredAt && new Date(voucher.expiredAt) < new Date())) {
         return res.status(400).json({
           success: false,
           message: "Voucher không hợp lệ hoặc đã hết hạn!",
@@ -80,11 +52,7 @@ const createOrder = async (req, res) => {
       // Áp dụng Decorator Pattern
       let decoratedCart = cart;
       if (voucher.type === "percent") {
-        decoratedCart = new PercentVoucherDecorator(
-          cart,
-          voucher.value,
-          voucher.maxDiscount
-        );
+        decoratedCart = new PercentVoucherDecorator(cart, voucher.value, voucher.maxDiscount);
       } else if (voucher.type === "fixed") {
         decoratedCart = new FixedVoucherDecorator(cart, voucher.value);
       }
@@ -149,53 +117,21 @@ const createOrder = async (req, res) => {
     }
 
     if (paymentMethod === "paypal") {
-      const create_payment_json = {
-        intent: "sale",
-        payer: {
-          payment_method: "paypal",
-        },
-        redirect_urls: {
-          return_url: "http://localhost:5173/shop/payment-success",
-          cancel_url: "http://localhost:5173/shop/payment-cancel",
-        },
-        transactions: [
-          {
-            // ❗ Không truyền item_list để tránh lỗi khi có voucher
-            amount: {
-              currency: "USD",
-              total: finalTotal.toFixed(2).toString(), // luôn là chuỗi, có 2 chữ số thập phân
-            },
-            description: `Đơn hàng #${newOrder._id}`,
-          },
-        ],
-      };
-
-      paypal.payment.create(create_payment_json, (error, payment) => {
-        if (error) {
-          console.error("❌ PayPal error:", error.response?.details || error);
-          return res
-            .status(500)
-            .json({ success: false, message: "PayPal error" });
-        }
-
-        const approvalURL = payment.links.find(
-          (link) => link.rel === "approval_url"
-        )?.href;
-
-        return res.status(201).json({
-          success: true,
-          approvalURL,
-          orderId: newOrder._id,
-        });
+      // PayPal payment được xử lý riêng thông qua PayPal service
+      return res.status(201).json({
+        success: true,
+        message: "Đơn hàng PayPal đã được tạo",
+        orderId: newOrder._id,
+        requiresPayment: true,
+        paymentMethod: "paypal"
       });
-
-      return;
     }
 
     return res.status(400).json({
       success: false,
       message: "Phương thức thanh toán không hợp lệ.",
     });
+
   } catch (error) {
     console.error("🚨 createOrder error:", error);
     return res.status(500).json({
@@ -205,6 +141,7 @@ const createOrder = async (req, res) => {
     });
   }
 };
+
 
 const capturePayment = async (req, res) => {
   try {

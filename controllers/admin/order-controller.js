@@ -3,7 +3,11 @@ const OrderContext = require("../../models/OrderContext");
 
 const getAllOrdersOfAllUsers = async (req, res) => {
   try {
-    const orders = await Order.find({});
+    const orders = await Order.find({})
+      .populate('userId', 'userName email') // ✅ Lấy thông tin user
+      .populate('addressId') // ✅ Lấy thông tin địa chỉ
+      .populate('cartItems.productId', 'title image price') // ✅ Lấy thông tin sản phẩm
+      .sort({ orderDate: -1 }); // ✅ Sắp xếp theo ngày mới nhất
 
     if (!orders.length) {
       return res.status(404).json({
@@ -12,9 +16,20 @@ const getAllOrdersOfAllUsers = async (req, res) => {
       });
     }
 
+    // ✅ Thêm thống kê nhanh
+    const stats = {
+      total: orders.length,
+      pending: orders.filter(o => o.orderStatus === 'pending').length,
+      confirmed: orders.filter(o => o.orderStatus === 'confirmed').length,
+      delivered: orders.filter(o => o.orderStatus === 'delivered').length,
+      rejected: orders.filter(o => o.orderStatus === 'rejected').length,
+      totalRevenue: orders.reduce((sum, o) => sum + o.totalAmount, 0)
+    };
+
     res.status(200).json({
       success: true,
       data: orders,
+      stats: stats, // ✅ Thêm thống kê cho admin dashboard
     });
   } catch (e) {
     console.log(e);
@@ -120,12 +135,76 @@ const getSalesPerMonth = async (req, res) => {
   }
 };
 
+// ✅ Thêm method lọc đơn hàng theo trạng thái
+const getOrdersByStatus = async (req, res) => {
+  try {
+    const { status } = req.params;
+    const validStatuses = ['pending', 'confirmed', 'delivered', 'rejected', 'inShipping'];
+    
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid order status!",
+      });
+    }
 
+    const orders = await Order.find({ orderStatus: status })
+      .populate('userId', 'userName email')
+      .populate('addressId')
+      .populate('cartItems.productId', 'title image price')
+      .sort({ orderDate: -1 });
+
+    res.status(200).json({
+      success: true,
+      data: orders,
+    });
+  } catch (e) {
+    console.log(e);
+    res.status(500).json({
+      success: false,
+      message: "Some error occurred!",
+    });
+  }
+};
+
+// ✅ Thêm method lọc đơn hàng theo payment method
+const getOrdersByPaymentMethod = async (req, res) => {
+  try {
+    const { method } = req.params;
+    const validMethods = ['paypal', 'momo', 'cash'];
+    
+    if (!validMethods.includes(method)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid payment method!",
+      });
+    }
+
+    const orders = await Order.find({ paymentMethod: method })
+      .populate('userId', 'userName email')
+      .populate('addressId')
+      .populate('cartItems.productId', 'title image price')
+      .sort({ orderDate: -1 });
+
+    res.status(200).json({
+      success: true,
+      data: orders,
+    });
+  } catch (e) {
+    console.log(e);
+    res.status(500).json({
+      success: false,
+      message: "Some error occurred!",
+    });
+  }
+};
 
 module.exports = {
   getAllOrdersOfAllUsers,
   getOrderDetailsForAdmin,
   updateOrderStatus,
+  getOrdersByStatus, // ✅ Thêm export
+  getOrdersByPaymentMethod, // ✅ Thêm export
   getTotalOrders,
   getTotalRevenue,
   getSalesPerMonth,
