@@ -105,6 +105,12 @@ class AuthService {
     return prefs.getString('token') != null;
   }
 
+  // Lấy token từ SharedPreferences
+  Future<String?> getToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('token');
+  }
+
   // Lấy user data đã lưu từ SharedPreferences
   Future<Map<String, dynamic>?> getSavedUser() async {
     try {

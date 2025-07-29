@@ -19,12 +19,25 @@ class VoucherService {
   }
 
   Future<Voucher?> checkVoucher(String code) async {
-    final response = await http.get(Uri.parse('$baseUrl/check/$code'));
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['success'] == true && data['data'] != null) {
-        return Voucher.fromJson(data['data']);
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/available'));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true) {
+          final List voucherList = data['data'];
+          final vouchers = voucherList.map((e) => Voucher.fromJson(e)).toList();
+          
+          // Find voucher by code
+          for (final voucher in vouchers) {
+            if (voucher.code.toUpperCase() == code.toUpperCase()) {
+              return voucher;
+            }
+          }
+          return null;
+        }
       }
+    } catch (e) {
+      print('Error checking voucher: $e');
     }
     return null;
   }

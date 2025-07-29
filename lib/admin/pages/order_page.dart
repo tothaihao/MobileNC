@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'order_detail_page.dart';
 import 'user_page.dart';
-import 'user_detail_page.dart';
 import 'package:do_an_mobile_nc/admin/models/admin_order_model.dart';
 import 'package:do_an_mobile_nc/admin/services/admin_order_service.dart';
 import 'package:http/http.dart' as http;
@@ -1189,7 +1188,7 @@ class _OrderPageState extends State<OrderPage> with TickerProviderStateMixin {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => UserDetailPage(userId: user.id),
+                              builder: (context) => UserPage(),
                             ),
                           );
                         },

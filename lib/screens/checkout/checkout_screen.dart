@@ -15,6 +15,7 @@ import '../../services/momo_service.dart';
 import '../../services/paypal_service.dart';
 import '../../utils/currency_helper.dart';
 import '../payment/paypal_webview_screen.dart';
+import '../voucher/voucher_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({Key? key}) : super(key: key);
@@ -336,96 +337,161 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               ),
               const SizedBox(height: 24),
               // Voucher Section
-              const Text(
-                'Mã giảm giá',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _voucherController,
-                      decoration: const InputDecoration(
-                        labelText: 'Nhập mã giảm giá',
-                        border: OutlineInputBorder(),
-                      ),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.local_offer, color: Colors.brown.shade600, size: 24),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Mã giảm giá',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        const Spacer(),
+                        TextButton.icon(
+                          onPressed: () async {
+                            final result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const VoucherScreen(),
+                              ),
+                            );
+                            if (result == true && voucherProvider.appliedVoucher != null) {
+                              _voucherController.text = voucherProvider.appliedVoucher!.code;
+                            }
+                          },
+                          icon: const Icon(Icons.list, size: 18),
+                          label: const Text('Chọn voucher'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.brown.shade600,
+                            textStyle: const TextStyle(fontSize: 14),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: voucherProvider.isLoading ? null : () async {
-                      if (_voucherController.text.isNotEmpty) {
-                        voucherProvider.clearMessages();
-                        final success = await voucherProvider.applyVoucher(
-                          _voucherController.text, 
-                          cart.totalPrice.toDouble()
-                        );
-                        if (mounted) {
-                          if (success) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(voucherProvider.successMessage ?? 'Áp dụng mã giảm giá thành công!'),
-                                backgroundColor: Colors.green,
-                              ),
-                            );
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(voucherProvider.error ?? 'Không thể áp dụng mã giảm giá'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        }
-                      }
-                    },
-                    child: voucherProvider.isLoading 
-                      ? const SizedBox(
-                          width: 16, height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2)
-                        )
-                      : const Text('Áp dụng'),
-                  ),
-                ],
-              ),
-              if (voucherProvider.appliedVoucher != null) ...[
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.green),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Mã: ${voucherProvider.appliedVoucher!.code}',
-                              style: const TextStyle(fontWeight: FontWeight.bold),
+                    const SizedBox(height: 12),
+                    
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _voucherController,
+                            decoration: InputDecoration(
+                              labelText: 'Nhập mã giảm giá',
+                              border: const OutlineInputBorder(),
+                              suffixIcon: _voucherController.text.isNotEmpty
+                                  ? IconButton(
+                                      icon: const Icon(Icons.clear),
+                                      onPressed: () {
+                                        _voucherController.clear();
+                                        voucherProvider.clearAppliedVoucher();
+                                      },
+                                    )
+                                  : null,
                             ),
-                            Text(
-                              'Giảm: ${CurrencyHelper.formatVND(voucherProvider.discountAmount)}',
-                              style: const TextStyle(color: Colors.green),
+                            textCapitalization: TextCapitalization.characters,
+                            onChanged: (value) {
+                              setState(() {});
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: voucherProvider.isLoading ? null : () async {
+                            if (_voucherController.text.isNotEmpty) {
+                              voucherProvider.clearMessages();
+                              final success = await voucherProvider.applyVoucher(
+                                _voucherController.text.toUpperCase(), 
+                                cart.totalPrice.toDouble()
+                              );
+                              if (mounted) {
+                                if (success) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(voucherProvider.successMessage ?? 'Áp dụng mã giảm giá thành công!'),
+                                      backgroundColor: Colors.green,
+                                    ),
+                                  );
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(voucherProvider.error ?? 'Không thể áp dụng mã giảm giá'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              }
+                            }
+                          },
+                          child: voucherProvider.isLoading 
+                            ? const SizedBox(
+                                width: 16, height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2)
+                              )
+                            : const Text('Áp dụng'),
+                        ),
+                      ],
+                    ),
+                    
+                    if (voucherProvider.appliedVoucher != null) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.green.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.check_circle, color: Colors.green, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Đã áp dụng: ${voucherProvider.appliedVoucher!.code}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.green,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Tiết kiệm: ${CurrencyHelper.formatVND(voucherProvider.discountAmount)}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.green.shade700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                voucherProvider.clearAppliedVoucher();
+                                _voucherController.clear();
+                              },
+                              child: const Text(
+                                'Bỏ',
+                                style: TextStyle(color: Colors.red, fontSize: 12),
+                              ),
                             ),
                           ],
                         ),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Colors.red),
-                        onPressed: () {
-                          voucherProvider.clearAppliedVoucher();
-                          _voucherController.clear();
-                        },
-                      ),
                     ],
-                  ),
+                  ],
                 ),
-              ],
+              ),
               const SizedBox(height: 24),
               // Phương thức thanh toán
               const Text('Phương thức thanh toán', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),

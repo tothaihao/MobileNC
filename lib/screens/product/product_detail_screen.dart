@@ -8,6 +8,8 @@ import '../../providers/favorites_provider.dart';
 import '../../models/review_model.dart';
 import '../../theme/colors.dart';
 import '../../widgets/gradient_button.dart';
+import 'add_review_screen.dart';
+import 'product_reviews_screen.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final String productId;
@@ -481,12 +483,58 @@ void initState() {
                       Icon(Icons.rate_review, color: AppColors.primary, size: 24),
                       const SizedBox(width: 8),
                       Text(
-                    'Đánh giá',
+                        'Đánh giá',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: AppColors.textPrimary,
                         ),
+                      ),
+                      const Spacer(),
+                      if (reviewProvider.reviews.isNotEmpty) ...[
+                        TextButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ProductReviewsScreen(
+                                  productId: widget.productId,
+                                  productName: product.title,
+                                ),
+                              ),
+                            );
+                          },
+                          child: Text(
+                            'Xem tất cả (${reviewProvider.reviews.length})',
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                      IconButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AddReviewScreen(
+                                productId: widget.productId,
+                                productName: product.title,
+                              ),
+                            ),
+                          ).then((result) {
+                            if (result == true) {
+                              context.read<ReviewProvider>().fetchReviews(widget.productId);
+                            }
+                          });
+                        },
+                        icon: Icon(
+                          Icons.edit,
+                          color: AppColors.primary,
+                          size: 20,
+                        ),
+                        tooltip: 'Viết đánh giá',
                       ),
                     ],
                   ),

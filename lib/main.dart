@@ -14,6 +14,7 @@ import 'providers/support_request_provider.dart';
 import 'providers/support_chat_provider.dart';
 import 'providers/admin_support_chat_provider.dart';
 import 'providers/feature_provider.dart';
+import 'providers/notification_provider.dart';
 
 // Screens
 import 'screens/auth/login_screen.dart';
@@ -86,6 +87,7 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (_) => SupportChatProvider()),
         ChangeNotifierProvider(create: (_) => AdminSupportChatProvider()),
         ChangeNotifierProvider(create: (_) => FeatureProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
       ],
       child: MaterialApp(
         title: 'Coffee Shop App',

@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../Layout/masterlayout.dart';
 import '../../theme/colors.dart';
+import '../voucher/voucher_screen.dart';
+import '../notification/notification_settings_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -57,9 +59,29 @@ class ProfileScreen extends StatelessWidget {
               onTap: () => Navigator.pushNamed(context, '/favorites'),
             ),
             _buildProfileOption(
+              icon: Icons.local_offer,
+              title: 'Mã giảm giá của tôi',
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const VoucherScreen(),
+                ),
+              ),
+            ),
+            _buildProfileOption(
               icon: Icons.location_on,
               title: 'Địa chỉ giao hàng',
               onTap: () => Navigator.pushNamed(context, '/address'),
+            ),
+            _buildProfileOption(
+              icon: Icons.notifications,
+              title: 'Cài đặt thông báo',
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const NotificationSettingsScreen(),
+                ),
+              ),
             ),
             _buildProfileOption(
               icon: Icons.settings,

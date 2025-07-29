@@ -6,7 +6,7 @@ class AppConfig {
   static const String _development = 'development';
   
   // Cấu hình environment hiện tại
-  static const String currentEnv = _production; // Sử dụng server Render hoặc local server tùy vào platform và mục đích phát triển.
+  static const String currentEnv = _development; // Sử dụng server Render hoặc local server tùy vào platform và mục đích phát triển.
   
   // Tự động detect platform và environment để sử dụng URL phù hợp
   static String get baseUrl {

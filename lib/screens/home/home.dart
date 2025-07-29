@@ -8,6 +8,7 @@ import 'package:do_an_mobile_nc/screens/product/product_detail_screen.dart';
 import 'package:do_an_mobile_nc/config/app_config.dart'; // Import config.dart
 import 'package:provider/provider.dart';
 import 'package:do_an_mobile_nc/providers/cart_provider.dart';
+import '../voucher/voucher_screen.dart';
 import 'package:do_an_mobile_nc/providers/auth_provider.dart';
 import 'package:do_an_mobile_nc/providers/feature_provider.dart';
 import 'package:do_an_mobile_nc/providers/favorites_provider.dart';
@@ -120,19 +121,28 @@ class _HomeScreenState extends State<HomeScreen> {
         print('DEBUG: Banner image URL: ${banner.image}');
         return Builder(
           builder: (BuildContext context) {
-            return Container(
-              width: MediaQuery.of(context).size.width,
-              margin: const EdgeInsets.symmetric(horizontal: 5.0),
-              decoration: BoxDecoration(
-                color: Colors.amber,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  banner.image,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
+            return GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const VoucherScreen(),
+                  ),
+                );
+              },
+              child: Container(
+                width: MediaQuery.of(context).size.width,
+                margin: const EdgeInsets.symmetric(horizontal: 5.0),
+                decoration: BoxDecoration(
+                  color: Colors.amber,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    banner.image,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
                     print('DEBUG: Error loading banner image: $error');
                     return Container(
                       color: Colors.grey[300],
@@ -153,6 +163,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 ),
               ),
+            ),
             );
           },
         );
